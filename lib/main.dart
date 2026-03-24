@@ -1,15 +1,18 @@
-import 'package:flutter/material.dart'; // 1. Import the UI library
+import 'package:flutter/material.dart';
 
 void main() {
-  // 2. The entry point. runApp needs a Widget to display.
-  runApp(
-    const MaterialApp(      // 3. The "Wrapper" widget for the whole app
-      home: Center(         // 4. A widget to center things
-        child: Text(        // 5. A widget to show text
-            'Hello World',
-            textDirection: TextDirection.ltr // Left-to-right
-        ),
-      ),
-    ),
-  );
+  runApp(const MaterialApp(home: MyMainPage()));
+}
+
+// We moved the UI into its own Class to keep things organized
+class MyMainPage extends StatelessWidget {
+  const MyMainPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Multi-Timer')),
+      body: const Center(child: Text('This is my clean slate.')),
+    );
+  }
 }

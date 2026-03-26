@@ -17,8 +17,20 @@ class _MyMainPageState extends State<MyMainPage> {
   ];
 
   void startTimer(TimerModel timer) {
-    // For now, we just print to the console to make sure the "link" works
-    print('Starting timer for: ${timer.title}');
+    // Mark the timer as 'Running'
+    timer.isRunning = true;
+    // Create the periodic timer
+    Timer.periodic(const Duration(seconds: 1), (t) {
+      // 'State' update. this is what makes the screen change.
+      setState(() {
+        if (timer.remainingSeconds > 0) {
+          timer.remainingSeconds--; // Subtract 1 second
+        } else {
+          t.cancel(); // Stop the clock when it hits zero
+          timer.isRunning = false;
+        }
+      });
+    });
   }
 
   @override

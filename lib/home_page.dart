@@ -12,7 +12,7 @@ class MyMainPage extends StatefulWidget {
 
 class _MyMainPageState extends State<MyMainPage> {
   List<TimerModel> timers = [
-    TimerModel(title: 'Pasta', remainingSeconds: 600),
+    TimerModel(title: 'Pasta', remainingSeconds: 3600*2+5),
     TimerModel(title: 'Egg', remainingSeconds: 300),
   ];
 
@@ -62,7 +62,6 @@ class _MyMainPageState extends State<MyMainPage> {
       // If a timer has a "motor" running, we kill it
       timer.internalTimer?.cancel();
     }
-    print("Main Page Disposed - All motors killed.");
     super.dispose(); // Always call the "base class" destructor last
   }
 }

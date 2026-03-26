@@ -22,7 +22,8 @@ class _MyMainPageState extends State<MyMainPage> {
         itemCount: timers.length,
         itemBuilder: (context, index) {
           // This function runs for every item in our 'timers' list
-          return const TimerCard();
+          final currentTimer = timers[index];
+          return TimerCard(timer: currentTimer);
         },
       ),
     );

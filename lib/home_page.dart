@@ -20,13 +20,13 @@ class _MyMainPageState extends State<MyMainPage> {
     // Mark the timer as 'Running'
     timer.isRunning = true;
     // Create the periodic timer
-    Timer.periodic(const Duration(seconds: 1), (t) {
+    timer.internalTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       // 'State' update. this is what makes the screen change.
       setState(() {
         if (timer.remainingSeconds > 0) {
           timer.remainingSeconds--; // Subtract 1 second
         } else {
-          t.cancel(); // Stop the clock when it hits zero
+          timer.internalTimer?.cancel(); // Stop the clock when it hits zero
           timer.isRunning = false;
         }
       });
@@ -44,8 +44,10 @@ class _MyMainPageState extends State<MyMainPage> {
               final currentTimer = timers[index];
               return InkWell(
                 onTap: () {
-                  // Small step: Just call our print function
-                  startTimer(currentTimer);
+                  // Only start the timer if it isn't ALREADY running
+                  if (!currentTimer.isRunning) {
+                    startTimer(currentTimer);
+                  }
                 },
                 child: TimerCard(timer: currentTimer),
               );
@@ -53,4 +55,15 @@ class _MyMainPageState extends State<MyMainPage> {
         )
     );
   }
+  @override
+  void dispose() {
+    // We loop through our data list
+    for (var timer in timers) {
+      // If a timer has a "motor" running, we kill it
+      timer.internalTimer?.cancel();
+    }
+    print("Main Page Disposed - All motors killed.");
+    super.dispose(); // Always call the "base class" destructor last
+  }
 }
+

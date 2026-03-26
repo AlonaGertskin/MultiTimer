@@ -1,44 +1,12 @@
 import 'package:flutter/material.dart';
+import 'timer_model.dart';
+import 'timer_card.dart';
+import 'home_page.dart';
 
 void main() {
   runApp(const MaterialApp(home: MyMainPage()));
 }
 
-// We moved the UI into its own Class to keep things organized
-class MyMainPage extends StatelessWidget {
-  const MyMainPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Multi-Timer')),
-        body: ListView(
-            children: [
-              TimerCard(),
-              TimerCard(),
-              TimerCard(),
-            ]
-        )
-    );
-  }
-}
 
-class TimerCard extends StatelessWidget {
-  const TimerCard({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    // A 'Card' gives us a nice white box with a slight shadow
-    return const Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        leading: Icon(Icons.timer_outlined), // Icon on the left
-        title: Text('Egg Timer'),           // Placeholder Title
-        trailing: Text(
-          '05:00',                           // Placeholder Time
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}

@@ -46,7 +46,7 @@ class _MyMainPageState extends State<MyMainPage> {
       timer.remainingSeconds = timer.initialSeconds; // Revert to initial value
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,14 +56,11 @@ class _MyMainPageState extends State<MyMainPage> {
             itemBuilder: (context, index) {
               // This function runs for every item in our 'timers' list
               final currentTimer = timers[index];
-              return InkWell(
-                onTap: () {
-                  // Only start the timer if it isn't ALREADY running
-                  if (!currentTimer.isRunning) {
-                    startTimer(currentTimer);
-                  }
-                },
-                child: TimerCard(timer: currentTimer),
+              return TimerCard(
+                timer: currentTimer,
+                onStart: () => startTimer(currentTimer),
+                onPause: () => pauseTimer(currentTimer),
+                onReset: () => resetTimer(currentTimer),
               );
             }
         )

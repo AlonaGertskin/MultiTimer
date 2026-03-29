@@ -3,9 +3,20 @@ import 'timer_model.dart';
 
 class TimerCard extends StatelessWidget {
   final TimerModel timer;
+  final VoidCallback onStart;
+  final VoidCallback onPause;
+  final VoidCallback onReset;
+  // functions for controls, have to be passed down from home page
 
-  //  the constructor to REQUIRE a timer.
-  const TimerCard({super.key, required this.timer});
+  const TimerCard({
+    super.key,
+    required this.timer,
+    required this.onStart,
+    required this.onPause,
+    required this.onReset,
+    // require having instructions for the controls
+  });
+
   String formatTime(int totalSeconds) {
     int hours = totalSeconds ~/ 3600;           // 3600 seconds in an hour
     int minutes = (totalSeconds % 3600) ~/ 60;  // Remainder of hours, divided by 60
@@ -27,14 +38,30 @@ class TimerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        leading: const Icon(Icons.timer_outlined),
-        // Use the data from the 'timer' variable!
-        title: Text(timer.title),
-        trailing: Text(
-          formatTime(timer.remainingSeconds), // Pass the raw seconds into our formatter
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.timer_outlined),
+            title: Text(timer.title),
+            trailing: Text(
+              formatTime(timer.remainingSeconds),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: Icon(timer.isRunning ? Icons.pause : Icons.play_arrow),
+                onPressed: timer.isRunning ? onPause : onStart,
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: onReset,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

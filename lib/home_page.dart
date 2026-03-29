@@ -32,7 +32,21 @@ class _MyMainPageState extends State<MyMainPage> {
       });
     });
   }
+  void pauseTimer(TimerModel timer) {
+    setState(() {
+      timer.internalTimer?.cancel();
+      timer.isRunning = false;
+    });
+  }
 
+  void resetTimer(TimerModel timer) {
+    setState(() {
+      timer.internalTimer?.cancel();
+      timer.isRunning = false;
+      timer.remainingSeconds = timer.initialSeconds; // Revert to initial value
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(

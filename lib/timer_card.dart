@@ -6,6 +6,8 @@ class TimerCard extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onPause;
   final VoidCallback onReset;
+  final VoidCallback onDelete;
+
   // functions for controls, have to be passed down from home page
 
   const TimerCard({
@@ -14,13 +16,15 @@ class TimerCard extends StatelessWidget {
     required this.onStart,
     required this.onPause,
     required this.onReset,
+    required this.onDelete,
     // require having instructions for the controls
   });
 
   String formatTime(int totalSeconds) {
-    int hours = totalSeconds ~/ 3600;           // 3600 seconds in an hour
-    int minutes = (totalSeconds % 3600) ~/ 60;  // Remainder of hours, divided by 60
-    int seconds = totalSeconds % 60;            // The leftover seconds
+    int hours = totalSeconds ~/ 3600; // 3600 seconds in an hour
+    int minutes = (totalSeconds % 3600) ~/
+        60; // Remainder of hours, divided by 60
+    int seconds = totalSeconds % 60; // The leftover seconds
 
     String h = hours.toString();
     String m = minutes.toString().padLeft(2, '0');
@@ -34,6 +38,7 @@ class TimerCard extends StatelessWidget {
       return '$minutes:$s';
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -43,23 +48,38 @@ class TimerCard extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.timer_outlined),
             title: Text(timer.title),
-            trailing: Text(
-              formatTime(timer.remainingSeconds),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  formatTime(timer.remainingSeconds),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(
+                      Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: onDelete,
+                ),
+              ],
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: Icon(timer.isRunning ? Icons.pause : Icons.play_arrow),
-                onPressed: timer.isRunning ? onPause : onStart,
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: onReset,
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0, right: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(timer.isRunning ? Icons.pause : Icons.play_arrow),
+                  onPressed: timer.isRunning ? onPause : onStart,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: onReset,
+                ),
+              ],
+            ),
           ),
         ],
       ),

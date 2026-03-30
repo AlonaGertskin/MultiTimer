@@ -1,5 +1,4 @@
 import 'dart:async'; //contains the Timer class
-import 'timer_card.dart';
 
 class TimerModel {
   String title;

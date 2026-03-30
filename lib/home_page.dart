@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
-import 'dart:async'; //contains the Timer class
 
 class MyMainPage extends StatefulWidget {
   const MyMainPage({super.key});
@@ -31,6 +30,13 @@ class _MyMainPageState extends State<MyMainPage> {
   void resetTimer(TimerModel timer) {
     setState(() {
       timer.reset();
+    });
+  }
+
+  void deleteTimer(TimerModel timer) {
+    setState(() {
+      timer.stop(); // Stop the background motor first
+      timers.remove(timer); // Remove from the data list
     });
   }
 
@@ -129,6 +135,7 @@ class _MyMainPageState extends State<MyMainPage> {
             onStart: () => startTimer(currentTimer),
             onPause: () => pauseTimer(currentTimer),
             onReset: () => resetTimer(currentTimer),
+            onDelete: () => deleteTimer(currentTimer),
           );
         },
       ),

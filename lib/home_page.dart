@@ -19,33 +19,18 @@ class _MyMainPageState extends State<MyMainPage> {
   final TextEditingController _secondsController = TextEditingController();
 
   void startTimer(TimerModel timer) {
-    // Mark the timer as 'Running'
-    timer.isRunning = true;
-    // Create the periodic timer
-    timer.internalTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      // 'State' update. this is what makes the screen change.
-      setState(() {
-        if (timer.remainingSeconds > 0) {
-          timer.remainingSeconds--; // Subtract 1 second
-        } else {
-          timer.internalTimer?.cancel(); // Stop the clock when it hits zero
-          timer.isRunning = false;
-        }
-      });
-    });
+    timer.start(() => setState(() {}));
   }
+
   void pauseTimer(TimerModel timer) {
     setState(() {
-      timer.internalTimer?.cancel();
-      timer.isRunning = false;
+      timer.stop();
     });
   }
 
   void resetTimer(TimerModel timer) {
     setState(() {
-      timer.internalTimer?.cancel();
-      timer.isRunning = false;
-      timer.remainingSeconds = timer.initialSeconds; // Revert to initial value
+      timer.reset();
     });
   }
 

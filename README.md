@@ -21,7 +21,7 @@ MultiTimer is a cross-platform application built with Flutter designed to orches
 - lib/timer_card.dart: A modular UI component for visualizing individual process stage progress.
 - lib/home_page.dart: The primary dashboard that orchestrates the collection of active timers.
 - lib/main.dart: The application entry point, handling global configuration and theme initialization.
-- 
+
 ## Setup and Deployment
 
 To deploy the application in a development environment:

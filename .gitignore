@@ -50,3 +50,6 @@ app.*.map.json
 *.h
 *.cc
 *.swift
+
+# Editor tooling
+devtools_options.yaml

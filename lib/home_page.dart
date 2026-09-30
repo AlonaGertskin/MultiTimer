@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
@@ -10,34 +12,71 @@ class MyMainPage extends StatefulWidget {
 }
 
 class _MyMainPageState extends State<MyMainPage> {
-  List<TimerModel> timers = [
-  ];
+  List<TimerModel> timers = [];
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _hoursController = TextEditingController();
   final TextEditingController _minutesController = TextEditingController();
   final TextEditingController _secondsController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    _loadTimers();
+  }
+
+  Future<void> _loadTimers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? timersJson = prefs.getString('saved_timers');
+    if (timersJson != null) {
+      final List<dynamic> decoded = jsonDecode(timersJson);
+      setState(() {
+        timers = decoded.map((item) => TimerModel.fromMap(item)).toList();
+      });
+
+      // Automatically restart the background processes for running timers
+      for (var timer in timers) {
+        if (timer.isRunning) {
+          // We set isRunning to false temporarily so .start() doesn't exit early
+          timer.isRunning = false; 
+          startTimer(timer);
+        }
+      }
+    }
+  }
+
+  Future<void> _saveTimers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encoded = jsonEncode(timers.map((t) => t.toMap()).toList());
+    await prefs.setString('saved_timers', encoded);
+  }
+
   void startTimer(TimerModel timer) {
-    timer.start(() => setState(() {}));
+    timer.start(() {
+      if (mounted) setState(() {});
+    });
+    _saveTimers();
   }
 
   void pauseTimer(TimerModel timer) {
     setState(() {
       timer.stop();
     });
+    _saveTimers();
   }
 
   void resetTimer(TimerModel timer) {
     setState(() {
       timer.reset();
     });
+    _saveTimers();
   }
 
   void deleteTimer(TimerModel timer) {
     setState(() {
-      timer.stop(); // Stop the background motor first
-      timers.remove(timer); // Remove from the data list
+      timer.stop();
+      timers.remove(timer);
     });
+    _saveTimers();
   }
 
   void _showAddTimerDialog() {
@@ -55,7 +94,6 @@ class _MyMainPageState extends State<MyMainPage> {
             const SizedBox(height: 16),
             Row(
               children: [
-                // Hours Input
                 Expanded(
                   child: TextField(
                     controller: _hoursController,
@@ -64,7 +102,6 @@ class _MyMainPageState extends State<MyMainPage> {
                   ),
                 ),
                 const Text(' : '),
-                // Minutes Input
                 Expanded(
                   child: TextField(
                     controller: _minutesController,
@@ -73,7 +110,6 @@ class _MyMainPageState extends State<MyMainPage> {
                   ),
                 ),
                 const Text(' : '),
-                // Seconds Input
                 Expanded(
                   child: TextField(
                     controller: _secondsController,
@@ -88,11 +124,9 @@ class _MyMainPageState extends State<MyMainPage> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')
-          ),
+              child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              // Parse all inputs, defaulting to 0 if empty/invalid
               int h = int.tryParse(_hoursController.text) ?? 0;
               int m = int.tryParse(_minutesController.text) ?? 0;
               int s = int.tryParse(_secondsController.text) ?? 0;
@@ -106,8 +140,8 @@ class _MyMainPageState extends State<MyMainPage> {
                     remainingSeconds: totalSeconds,
                   ));
                 });
+                _saveTimers();
 
-                // Clear all controllers
                 _titleController.clear();
                 _hoursController.clear();
                 _minutesController.clear();
@@ -145,14 +179,16 @@ class _MyMainPageState extends State<MyMainPage> {
       ),
     );
   }
+
   @override
   void dispose() {
-    // We loop through our data list
     for (var timer in timers) {
-      // If a timer has a "motor" running, we kill it
       timer.internalTimer?.cancel();
     }
-    super.dispose(); // Always call the "base class" destructor last
+    _titleController.dispose();
+    _hoursController.dispose();
+    _minutesController.dispose();
+    _secondsController.dispose();
+    super.dispose();
   }
 }
-

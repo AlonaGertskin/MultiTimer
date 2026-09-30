@@ -8,8 +8,6 @@ class TimerCard extends StatelessWidget {
   final VoidCallback onReset;
   final VoidCallback onDelete;
 
-  // functions for controls, have to be passed down from home page
-
   const TimerCard({
     super.key,
     required this.timer,
@@ -17,25 +15,24 @@ class TimerCard extends StatelessWidget {
     required this.onPause,
     required this.onReset,
     required this.onDelete,
-    // require having instructions for the controls
   });
 
   String formatTime(int totalSeconds) {
-    int hours = totalSeconds ~/ 3600; // 3600 seconds in an hour
-    int minutes = (totalSeconds % 3600) ~/
-        60; // Remainder of hours, divided by 60
-    int seconds = totalSeconds % 60; // The leftover seconds
+    bool isNegative = totalSeconds < 0;
+    int absSeconds = totalSeconds.abs();
+    
+    int hours = absSeconds ~/ 3600;
+    int minutes = (absSeconds % 3600) ~/ 60;
+    int seconds = absSeconds % 60;
 
-    String h = hours.toString();
     String m = minutes.toString().padLeft(2, '0');
     String s = seconds.toString().padLeft(2, '0');
+    String prefix = isNegative ? '-' : '';
 
-    // If we have hours, show H:MM:SS
     if (hours > 0) {
-      return '$h:$m:$s';
+      return '$prefix$hours:$m:$s';
     } else {
-      // Otherwise, just show MM:SS (or M:SS)
-      return '$minutes:$s';
+      return '$prefix$minutes:$s';
     }
   }
 

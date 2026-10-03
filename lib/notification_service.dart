@@ -54,13 +54,4 @@ class NotificationService {
   }
 
   Future<void> cancel(int id) => _plugin.cancel(id: id);
-
-  Future<void> showTest() {
-    return _plugin.show(
-      id: 0,
-      title: 'MultiTimer',
-      body: 'Test notification',
-      notificationDetails: _details,
-    );
-  }
 }

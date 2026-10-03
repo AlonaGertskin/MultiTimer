@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multitimer/bundle_store.dart';
@@ -85,6 +86,95 @@ void main() {
       await save(tester);
 
       expect(find.text('1 timer · 3:00 total'), findsOneWidget);
+    });
+  });
+
+  group('Bundle editor reordering', () {
+    Future<void> prepareThreeTimers(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await openEditor(tester);
+      await tester.enterText(field('Bundle name'), 'Dinner');
+      await fillRow(tester, 0, 'First', minutes: '1');
+      for (final entry in {1: ['Second', '2'], 2: ['Third', '3']}.entries) {
+        await tester.tap(find.text('Add timer'));
+        await tester.pump();
+        await fillRow(tester, entry.key, entry.value[0], minutes: entry.value[1]);
+      }
+    }
+
+    List<String> shownOrder(WidgetTester tester) {
+      final names = ['First', 'Second', 'Third'];
+      names.sort((a, b) => tester
+          .getTopLeft(find.text(a))
+          .dy
+          .compareTo(tester.getTopLeft(find.text(b)).dy));
+      return names;
+    }
+
+    Future<void> dragCard(WidgetTester tester, int index, double distance) async {
+      final start =
+          tester.getTopLeft(find.byType(Card).at(index)) + const Offset(12, 8);
+      final gesture = await tester.startGesture(start);
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      for (var i = 0; i < 10; i++) {
+        await gesture.moveBy(Offset(0, distance / 10));
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('holding a timer and dragging it down moves it',
+        (tester) async {
+      await prepareThreeTimers(tester);
+
+      await dragCard(tester, 0, 200);
+
+      expect(shownOrder(tester), ['Second', 'First', 'Third']);
+    });
+
+    testWidgets('holding a timer and dragging it up moves it', (tester) async {
+      await prepareThreeTimers(tester);
+
+      await dragCard(tester, 2, -200);
+
+      expect(shownOrder(tester), ['First', 'Third', 'Second']);
+    });
+
+    testWidgets('every timer has a drag handle', (tester) async {
+      await prepareThreeTimers(tester);
+
+      expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+    });
+
+    testWidgets('a handle drags right away, without holding', (tester) async {
+      await prepareThreeTimers(tester);
+
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byIcon(Icons.drag_handle).first));
+      for (var i = 0; i < 10; i++) {
+        await gesture.moveBy(const Offset(0, 20));
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(shownOrder(tester), ['Second', 'First', 'Third']);
+    });
+
+    testWidgets('the saved bundle follows the new order, with each time',
+        (tester) async {
+      await prepareThreeTimers(tester);
+      await dragCard(tester, 0, 200);
+
+      await save(tester);
+      final saved = (await BundleStore().load()).first.items;
+
+      expect(saved.map((i) => i.title), ['Second', 'First', 'Third']);
+      expect(saved.map((i) => i.seconds), [120, 60, 180]);
     });
   });
 

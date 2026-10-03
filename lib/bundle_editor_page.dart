@@ -33,6 +33,13 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
     row.dispose();
   }
 
+  void _reorderRows(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      _rows.insert(newIndex, _rows.removeAt(oldIndex));
+    });
+  }
+
   void _save() {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
@@ -85,23 +92,56 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
           TextButton(onPressed: _save, child: const Text('Save')),
         ],
       ),
-      body: ListView(
+      body: ReorderableListView.builder(
         padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
+        buildDefaultDragHandles: false,
+        onReorderStart: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        onReorder: _reorderRows,
+        header: Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: TextField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Bundle name'),
             textCapitalization: TextCapitalization.sentences,
             textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 16),
-          for (final row in _rows)
-            Card(
-              key: ObjectKey(row),
+        ),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add timer'),
+              onPressed: _addRow,
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
+        ),
+        itemCount: _rows.length,
+        itemBuilder: (context, index) {
+          final row = _rows[index];
+          return ReorderableDelayedDragStartListener(
+            key: ObjectKey(row),
+            index: index,
+            child: Card(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
+                padding: const EdgeInsets.fromLTRB(0, 8, 8, 16),
                 child: Row(
                   children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: const Padding(
+                        padding: EdgeInsets.fromLTRB(12, 16, 12, 16),
+                        child: Icon(Icons.drag_handle),
+                      ),
+                    ),
                     Expanded(
                       child: Column(
                         children: [
@@ -133,23 +173,8 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
                 ),
               ),
             ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Add timer'),
-              onPressed: _addRow,
-            ),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-        ],
+          );
+        },
       ),
     );
   }

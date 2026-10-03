@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'bundle_model.dart';
+import 'confirm_discard.dart';
 import 'time_fields.dart';
 
 class _ItemRow {
@@ -31,6 +32,19 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
   void _removeRow(_ItemRow row) {
     setState(() => _rows.remove(row));
     row.dispose();
+  }
+
+  bool get _hasChanges =>
+      _nameController.text.trim().isNotEmpty ||
+      _rows.length != 1 ||
+      _rows.any(
+        (row) => row.title.text.trim().isNotEmpty || row.time.totalSeconds > 0,
+      );
+
+  Future<void> _leave() async {
+    if (_hasChanges && !await confirmDiscard(context)) return;
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   void _reorderRows(int oldIndex, int newIndex) {
@@ -85,12 +99,20 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _leave();
+      },
+      child: _buildScaffold(context),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('New Bundle'),
-        actions: [
-          TextButton(onPressed: _save, child: const Text('Save')),
-        ],
+        actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: ReorderableListView.builder(
         padding: const EdgeInsets.all(16),
@@ -147,8 +169,9 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
                         children: [
                           TextField(
                             controller: row.title,
-                            decoration:
-                                const InputDecoration(labelText: 'Timer name'),
+                            decoration: const InputDecoration(
+                              labelText: 'Timer name',
+                            ),
                             textCapitalization: TextCapitalization.sentences,
                             textInputAction: TextInputAction.next,
                           ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bundles_page.dart';
+import 'confirm_discard.dart';
 import 'notification_service.dart';
 import 'time_fields.dart';
 import 'timer_card.dart';
@@ -125,6 +126,22 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
+  bool _dialogHasChanges(TimerModel? editing) {
+    if (editing == null) {
+      return _titleController.text.trim().isNotEmpty ||
+          _timeController.totalSeconds > 0;
+    }
+    return _titleController.text.trim() != editing.title ||
+        _timeController.totalSeconds != editing.initialSeconds;
+  }
+
+  Future<void> _closeDialog(BuildContext context, TimerModel? editing) async {
+    if (_dialogHasChanges(editing) && !await confirmDiscard(context)) return;
+    if (!context.mounted) return;
+    _clearDialogFields();
+    Navigator.pop(context);
+  }
+
   void _showTimerDialog({TimerModel? editing}) {
     String? error;
     if (editing != null) {
@@ -135,65 +152,78 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     }
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(editing == null ? 'Add New Timer' : 'Edit Timer'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Timer Title'),
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 16),
-              TimeFields(controller: _timeController),
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
+      builder: (context) => PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) _closeDialog(context, editing);
+        },
+        child: StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(editing == null ? 'Add New Timer' : 'Edit Timer'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(labelText: 'Timer Title'),
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.next,
                 ),
-            ],
-          ),
-          actions: [
-            TextButton(
+                const SizedBox(height: 16),
+                TimeFields(controller: _timeController),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
                 onPressed: () {
                   _clearDialogFields();
                   Navigator.pop(context);
                 },
-                child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                final totalSeconds = _timeController.totalSeconds;
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final totalSeconds = _timeController.totalSeconds;
 
-                if (_titleController.text.trim().isEmpty) {
-                  setDialogState(() => error = 'Please enter a title.');
-                } else if (totalSeconds <= 0) {
-                  setDialogState(() => error = 'Please enter a time above zero.');
-                } else {
-                  final title = _titleController.text.trim();
-                  if (editing == null) {
-                    setState(() {
-                      timers.add(TimerModel(
-                        title: title,
-                        remainingSeconds: totalSeconds,
-                      ));
-                    });
-                    _saveTimers();
+                  if (_titleController.text.trim().isEmpty) {
+                    setDialogState(() => error = 'Please enter a title.');
+                  } else if (totalSeconds <= 0) {
+                    setDialogState(
+                      () => error = 'Please enter a time above zero.',
+                    );
                   } else {
-                    _applyEdit(editing, title, totalSeconds);
+                    final title = _titleController.text.trim();
+                    if (editing == null) {
+                      setState(() {
+                        timers.add(
+                          TimerModel(
+                            title: title,
+                            remainingSeconds: totalSeconds,
+                          ),
+                        );
+                      });
+                      _saveTimers();
+                    } else {
+                      _applyEdit(editing, title, totalSeconds);
+                    }
+                    _clearDialogFields();
+                    Navigator.pop(context);
                   }
-                  _clearDialogFields();
-                  Navigator.pop(context);
-                }
-              },
-              child: Text(editing == null ? 'Add' : 'Save'),
-            ),
-          ],
+                },
+                child: Text(editing == null ? 'Add' : 'Save'),
+              ),
+            ],
+          ),
         ),
       ),
     );

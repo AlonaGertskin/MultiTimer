@@ -16,6 +16,7 @@ class MyMainPage extends StatefulWidget {
 
 class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   List<TimerModel> timers = [];
+  bool _reorderMode = false;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _hoursController = TextEditingController();
   final TextEditingController _minutesController = TextEditingController();
@@ -133,6 +134,14 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     );
   }
 
+  void _reorderTimers(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      timers.insert(newIndex, timers.removeAt(oldIndex));
+    });
+    _saveTimers();
+  }
+
   String _digits(int value) => value == 0 ? '' : value.toString();
 
   void _applyEdit(TimerModel timer, String title, int totalSeconds) {
@@ -243,18 +252,52 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Multi-Timer')),
-      body: ListView.builder(
+      appBar: AppBar(
+        title: const Text('Multi-Timer'),
+        actions: [
+          IconButton(
+            icon: Icon(_reorderMode ? Icons.check : Icons.swap_vert),
+            tooltip: _reorderMode ? 'Done reordering' : 'Reorder timers',
+            onPressed: () => setState(() => _reorderMode = !_reorderMode),
+          ),
+        ],
+      ),
+      body: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
         itemCount: timers.length,
+        onReorder: _reorderTimers,
         itemBuilder: (context, index) {
           final currentTimer = timers[index];
-          return TimerCard(
-            timer: currentTimer,
-            onStart: () => startTimer(currentTimer),
-            onPause: () => pauseTimer(currentTimer),
-            onReset: () => resetTimer(currentTimer),
-            onEdit: () => _showTimerDialog(editing: currentTimer),
-            onDelete: () => deleteTimer(currentTimer),
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey(currentTimer.id),
+            index: index,
+            child: Row(
+              children: [
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  alignment: Alignment.centerLeft,
+                  child: _reorderMode
+                      ? ReorderableDragStartListener(
+                          index: index,
+                          child: const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 16, 0, 16),
+                            child: Icon(Icons.drag_handle),
+                          ),
+                        )
+                      : const SizedBox(width: 0),
+                ),
+                Expanded(
+                  child: TimerCard(
+                    timer: currentTimer,
+                    onStart: () => startTimer(currentTimer),
+                    onPause: () => pauseTimer(currentTimer),
+                    onReset: () => resetTimer(currentTimer),
+                    onEdit: () => _showTimerDialog(editing: currentTimer),
+                    onDelete: () => deleteTimer(currentTimer),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

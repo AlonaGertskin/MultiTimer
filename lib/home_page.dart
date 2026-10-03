@@ -112,13 +112,41 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     );
   }
 
-  void _showAddTimerDialog() {
+  String _digits(int value) => value == 0 ? '' : value.toString();
+
+  void _applyEdit(TimerModel timer, String title, int totalSeconds) {
+    final durationChanged = totalSeconds != timer.initialSeconds;
+    setState(() {
+      timer.title = title;
+      if (durationChanged) timer.updateDuration(totalSeconds);
+    });
+    if (durationChanged) {
+      NotificationService.instance.cancel(timer.id);
+    } else if (timer.isRunning) {
+      NotificationService.instance.schedule(
+        id: timer.id,
+        title: timer.title,
+        when: timer.endTime!,
+      );
+    }
+    _saveTimers();
+  }
+
+  void _showTimerDialog({TimerModel? editing}) {
     String? error;
+    if (editing != null) {
+      _titleController.text = editing.title;
+      _hoursController.text = _digits(editing.initialSeconds ~/ 3600);
+      _minutesController.text = _digits(editing.initialSeconds % 3600 ~/ 60);
+      _secondsController.text = _digits(editing.initialSeconds % 60);
+    } else {
+      _clearDialogFields();
+    }
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add New Timer'),
+          title: Text(editing == null ? 'Add New Timer' : 'Edit Timer'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -166,18 +194,23 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                 } else if (totalSeconds <= 0) {
                   setDialogState(() => error = 'Please enter a time above zero.');
                 } else {
-                  setState(() {
-                    timers.add(TimerModel(
-                      title: _titleController.text.trim(),
-                      remainingSeconds: totalSeconds,
-                    ));
-                  });
-                  _saveTimers();
+                  final title = _titleController.text.trim();
+                  if (editing == null) {
+                    setState(() {
+                      timers.add(TimerModel(
+                        title: title,
+                        remainingSeconds: totalSeconds,
+                      ));
+                    });
+                    _saveTimers();
+                  } else {
+                    _applyEdit(editing, title, totalSeconds);
+                  }
                   _clearDialogFields();
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Add'),
+              child: Text(editing == null ? 'Add' : 'Save'),
             ),
           ],
         ),
@@ -198,12 +231,13 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
             onStart: () => startTimer(currentTimer),
             onPause: () => pauseTimer(currentTimer),
             onReset: () => resetTimer(currentTimer),
+            onEdit: () => _showTimerDialog(editing: currentTimer),
             onDelete: () => deleteTimer(currentTimer),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTimerDialog,
+        onPressed: _showTimerDialog,
         child: const Icon(Icons.add),
       ),
     );

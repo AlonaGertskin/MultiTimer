@@ -6,6 +6,7 @@ class TimerCard extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onPause;
   final VoidCallback onReset;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const TimerCard({
@@ -14,6 +15,7 @@ class TimerCard extends StatelessWidget {
     required this.onStart,
     required this.onPause,
     required this.onReset,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -74,6 +76,10 @@ class TimerCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: onReset,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
                 ),
               ],
             ),

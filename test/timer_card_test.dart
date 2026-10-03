@@ -8,6 +8,7 @@ void main() {
     onStart: () {},
     onPause: () {},
     onReset: () {},
+    onEdit: () {},
     onDelete: () {},
   );
 

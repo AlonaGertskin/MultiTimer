@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bundle_model.dart';
 import 'bundles_page.dart';
 import 'confirm_discard.dart';
 import 'notification_service.dart';
@@ -126,6 +127,33 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
+  Future<void> _openBundles() async {
+    final bundle = await Navigator.push<Bundle>(
+      context,
+      MaterialPageRoute(builder: (context) => const BundlesPage()),
+    );
+    if (bundle == null || !mounted) return;
+
+    setState(() {
+      timers.addAll(
+        bundle.items.map(
+          (item) =>
+              TimerModel(title: item.title, remainingSeconds: item.seconds),
+        ),
+      );
+    });
+    _saveTimers();
+
+    final count = bundle.items.length;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Added $count ${count == 1 ? 'timer' : 'timers'} from ${bundle.name}',
+        ),
+      ),
+    );
+  }
+
   bool _dialogHasChanges(TimerModel? editing) {
     if (editing == null) {
       return _titleController.text.trim().isNotEmpty ||
@@ -238,10 +266,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
           IconButton(
             icon: const Icon(Icons.inventory_2_outlined),
             tooltip: 'Bundles',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BundlesPage()),
-            ),
+            onPressed: _openBundles,
           ),
           IconButton(
             icon: Icon(_reorderMode ? Icons.check : Icons.swap_vert),

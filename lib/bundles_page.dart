@@ -64,6 +64,8 @@ class _BundlesPageState extends State<BundlesPage> {
                 return ListTile(
                   title: Text(bundle.name),
                   subtitle: Text(_summary(bundle)),
+                  trailing: const Icon(Icons.playlist_add),
+                  onTap: () => Navigator.pop(context, bundle),
                 );
               },
             ),

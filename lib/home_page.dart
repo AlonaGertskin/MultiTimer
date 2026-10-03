@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'notification_service.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
@@ -164,7 +165,15 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Multi-Timer')),
+      appBar: AppBar(
+        title: const Text('Multi-Timer'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_active),
+            onPressed: NotificationService.instance.showTest,
+          ),
+        ],
+      ),
       body: ListView.builder(
         itemCount: timers.length,
         itemBuilder: (context, index) {

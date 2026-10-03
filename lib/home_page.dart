@@ -11,6 +11,14 @@ import 'time_fields.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
+class _RemovedTimer {
+  final TimerModel timer;
+  final int index;
+  final DateTime? end;
+
+  const _RemovedTimer(this.timer, this.index, this.end);
+}
+
 class MyMainPage extends StatefulWidget {
   const MyMainPage({super.key});
 
@@ -20,7 +28,8 @@ class MyMainPage extends StatefulWidget {
 
 class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   List<TimerModel> timers = [];
-  bool _reorderMode = false;
+  bool _editMode = false;
+  final Set<int> _selectedIds = {};
   final TextEditingController _titleController = TextEditingController();
   final TimeFieldsController _timeController = TimeFieldsController();
 
@@ -89,44 +98,93 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
-  void deleteTimer(TimerModel timer) {
-    setState(() {
-      timer.stop();
-      timers.remove(timer);
-    });
-    NotificationService.instance.cancel(timer.id);
-    _saveTimers();
-  }
+  void _deleteWithUndo(List<TimerModel> toDelete) {
+    if (toDelete.isEmpty) return;
+    final removed = [
+      for (final timer in toDelete)
+        _RemovedTimer(
+          timer,
+          timers.indexOf(timer),
+          timer.isRunning ? timer.endTime : null,
+        ),
+    ]..sort((a, b) => a.index.compareTo(b.index));
 
-  void _deleteWithUndo(TimerModel timer) {
-    final index = timers.indexOf(timer);
-    final end = timer.isRunning ? timer.endTime : null;
-    deleteTimer(timer);
+    setState(() {
+      for (final item in removed) {
+        item.timer.stop();
+        timers.remove(item.timer);
+        _selectedIds.remove(item.timer.id);
+      }
+    });
+    for (final item in removed) {
+      NotificationService.instance.cancel(item.timer.id);
+    }
+    _saveTimers();
+
     showUndoSnackBar(
       context,
-      '${timer.title} deleted',
-      () => _restoreTimer(timer, index, end),
+      removed.length == 1
+          ? '${removed.first.timer.title} deleted'
+          : '${removed.length} timers deleted',
+      () => _restoreTimers(removed),
     );
   }
 
-  void _restoreTimer(TimerModel timer, int index, DateTime? end) {
+  void _restoreTimers(List<_RemovedTimer> removed) {
     if (!mounted) return;
     setState(() {
-      timers.insert(index.clamp(0, timers.length), timer);
-      if (end != null) {
-        timer.resume(end, () {
-          if (mounted) setState(() {});
-        });
+      for (final item in removed) {
+        timers.insert(item.index.clamp(0, timers.length), item.timer);
+        final end = item.end;
+        if (end != null) {
+          item.timer.resume(end, () {
+            if (mounted) setState(() {});
+          });
+        }
       }
     });
-    if (end != null) {
-      NotificationService.instance.schedule(
-        id: timer.id,
-        title: timer.title,
-        when: end,
-      );
+    for (final item in removed) {
+      final end = item.end;
+      if (end != null) {
+        NotificationService.instance.schedule(
+          id: item.timer.id,
+          title: item.timer.title,
+          when: end,
+        );
+      }
     }
     _saveTimers();
+  }
+
+  void _setEditMode(bool on) {
+    setState(() {
+      _editMode = on;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelected(TimerModel timer) {
+    setState(() {
+      if (!_selectedIds.remove(timer.id)) _selectedIds.add(timer.id);
+    });
+  }
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selectedIds.length == timers.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds
+          ..clear()
+          ..addAll(timers.map((timer) => timer.id));
+      }
+    });
+  }
+
+  void _deleteSelected() {
+    _deleteWithUndo(
+      timers.where((timer) => _selectedIds.contains(timer.id)).toList(),
+    );
   }
 
   void _clearDialogFields() {
@@ -290,10 +348,9 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+  PreferredSizeWidget _buildAppBar() {
+    if (!_editMode) {
+      return AppBar(
         title: const Text('Multi-Timer'),
         actions: [
           IconButton(
@@ -302,12 +359,43 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
             onPressed: _openBundles,
           ),
           IconButton(
-            icon: Icon(_reorderMode ? Icons.check : Icons.swap_vert),
-            tooltip: _reorderMode ? 'Done reordering' : 'Reorder timers',
-            onPressed: () => setState(() => _reorderMode = !_reorderMode),
+            icon: const Icon(Icons.checklist),
+            tooltip: 'Edit list',
+            onPressed: () => _setEditMode(true),
           ),
         ],
+      );
+    }
+    return AppBar(
+      title: Text(
+        _selectedIds.isEmpty
+            ? 'Select timers'
+            : '${_selectedIds.length} selected',
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          tooltip: 'Select all',
+          onPressed: timers.isEmpty ? null : _toggleSelectAll,
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: 'Delete selected',
+          onPressed: _selectedIds.isEmpty ? null : _deleteSelected,
+        ),
+        IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: 'Done',
+          onPressed: () => _setEditMode(false),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
       body: SlidableAutoCloseBehavior(
         child: ReorderableListView.builder(
           buildDefaultDragHandles: false,
@@ -321,21 +409,41 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
               child: Slidable(
                 key: ValueKey('swipe-${currentTimer.id}'),
                 groupTag: 'timers',
-                enabled: !_reorderMode,
+                enabled: !_editMode,
                 endActionPane: deleteActionPane(
-                  onDelete: () => _deleteWithUndo(currentTimer),
+                  onDelete: () => _deleteWithUndo([currentTimer]),
                 ),
                 child: Row(
                   children: [
                     AnimatedSize(
                       duration: const Duration(milliseconds: 200),
                       alignment: Alignment.centerLeft,
-                      child: _reorderMode
-                          ? ReorderableDragStartListener(
-                              index: index,
-                              child: const Padding(
-                                padding: EdgeInsets.fromLTRB(16, 16, 0, 16),
-                                child: Icon(Icons.drag_handle),
+                      child: _editMode
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Checkbox(
+                                    value: _selectedIds.contains(
+                                      currentTimer.id,
+                                    ),
+                                    onChanged: (_) =>
+                                        _toggleSelected(currentTimer),
+                                  ),
+                                  ReorderableDragStartListener(
+                                    index: index,
+                                    child: const Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        4,
+                                        16,
+                                        0,
+                                        16,
+                                      ),
+                                      child: Icon(Icons.drag_handle),
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           : const SizedBox(width: 0),
@@ -356,10 +464,12 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showTimerDialog,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _editMode
+          ? null
+          : FloatingActionButton(
+              onPressed: _showTimerDialog,
+              child: const Icon(Icons.add),
+            ),
     );
   }
 

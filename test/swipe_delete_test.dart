@@ -189,31 +189,29 @@ void main() {
       expect(tester.getTopLeft(find.text('A')), closedA);
     });
 
-    testWidgets('swiping is off while reordering, so handles stay put', (
+    testWidgets('swiping is off in edit mode, so handles stay put', (
       tester,
     ) async {
       saveTimers([plain('Tea', 60)]);
       await openMain(tester);
-      await tester.tap(find.byTooltip('Reorder timers'));
+      await tester.tap(find.byTooltip('Edit list'));
       await tester.pumpAndSettle();
       final handleBefore = tester.getCenter(find.byIcon(Icons.drag_handle));
       final cardBefore = tester.getTopLeft(find.text('Tea'));
 
       await slide(tester, 'Tea');
 
-      expect(find.byIcon(Icons.delete_outline), findsNothing);
+      expect(trashFor('Tea'), findsNothing);
       expect(tester.getCenter(find.byIcon(Icons.drag_handle)), handleBefore);
       expect(tester.getTopLeft(find.text('Tea')), cardBefore);
     });
 
-    testWidgets('swiping works again after leaving reorder mode', (
-      tester,
-    ) async {
+    testWidgets('swiping works again after leaving edit mode', (tester) async {
       saveTimers([plain('Tea', 60)]);
       await openMain(tester);
-      await tester.tap(find.byTooltip('Reorder timers'));
+      await tester.tap(find.byTooltip('Edit list'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Done reordering'));
+      await tester.tap(find.byTooltip('Done'));
       await tester.pumpAndSettle();
 
       await slide(tester, 'Tea');

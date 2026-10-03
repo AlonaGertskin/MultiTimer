@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 class TimerModel {
   String title;
@@ -7,13 +8,16 @@ class TimerModel {
   bool isRunning;
   DateTime? endTime;
   Timer? internalTimer;
+  final DateTime Function() _now;
 
   TimerModel({
     required this.title,
     required this.remainingSeconds,
     this.isRunning = false,
     this.endTime,
-  }) : initialSeconds = remainingSeconds;
+    DateTime Function()? now,
+  })  : initialSeconds = remainingSeconds,
+        _now = now ?? DateTime.now;
 
   Map<String, dynamic> toMap() {
     return {
@@ -25,31 +29,57 @@ class TimerModel {
     };
   }
 
-  factory TimerModel.fromMap(Map<String, dynamic> map) {
+  factory TimerModel.fromMap(Map<String, dynamic> map,
+      {DateTime Function()? now}) {
     bool running = map['isRunning'] ?? false;
     int remaining = map['remainingSeconds'] ?? map['initialSeconds'];
     DateTime? end = map['endTime'] != null ? DateTime.parse(map['endTime']) : null;
 
-    if (running && end != null) {
-      remaining = end.difference(DateTime.now()).inSeconds;
-    }
-
-    return TimerModel(
+    final timer = TimerModel(
       title: map['title'],
       remainingSeconds: remaining,
       isRunning: running,
       endTime: end,
+      now: now,
     )..initialSeconds = map['initialSeconds'];
+
+    if (running && end != null) timer.syncWithClock();
+    return timer;
+  }
+
+  static List<TimerModel> listFromJson(String json, {DateTime Function()? now}) {
+    final List<dynamic> decoded;
+    try {
+      decoded = jsonDecode(json) as List<dynamic>;
+    } catch (_) {
+      return [];
+    }
+
+    final timers = <TimerModel>[];
+    for (final item in decoded) {
+      try {
+        timers.add(TimerModel.fromMap(item as Map<String, dynamic>, now: now));
+      } catch (_) {
+        continue;
+      }
+    }
+    return timers;
+  }
+
+  void syncWithClock() {
+    final end = endTime;
+    if (end == null) return;
+    remainingSeconds = (end.difference(_now()).inMilliseconds / 1000).round();
   }
 
   void start(Function onTick) {
     if (isRunning && internalTimer != null) return;
 
     isRunning = true;
-    endTime = DateTime.now().add(Duration(seconds: remainingSeconds));
-    
+    endTime = _now().add(Duration(seconds: remainingSeconds));
+
     internalTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      remainingSeconds--;
+      syncWithClock();
       onTick();
     });
   }

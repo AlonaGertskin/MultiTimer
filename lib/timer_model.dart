@@ -2,6 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 
 class TimerModel {
+  static int _lastId = 0;
+
+  static int _newId() {
+    final id = DateTime.now().millisecondsSinceEpoch % 2147483647;
+    _lastId = id > _lastId ? id : _lastId + 1;
+    return _lastId;
+  }
+
+  final int id;
   String title;
   int remainingSeconds;
   int initialSeconds;
@@ -11,16 +20,19 @@ class TimerModel {
   final DateTime Function() _now;
 
   TimerModel({
+    int? id,
     required this.title,
     required this.remainingSeconds,
     this.isRunning = false,
     this.endTime,
     DateTime Function()? now,
-  })  : initialSeconds = remainingSeconds,
+  })  : id = id ?? _newId(),
+        initialSeconds = remainingSeconds,
         _now = now ?? DateTime.now;
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'title': title,
       'initialSeconds': initialSeconds,
       'remainingSeconds': remainingSeconds,
@@ -36,6 +48,7 @@ class TimerModel {
     DateTime? end = map['endTime'] != null ? DateTime.parse(map['endTime']) : null;
 
     final timer = TimerModel(
+      id: map['id'],
       title: map['title'],
       remainingSeconds: remaining,
       isRunning: running,

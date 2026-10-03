@@ -163,6 +163,34 @@ void main() {
     });
   });
 
+  group('TimerModel ids', () {
+    test('every timer gets its own id', () {
+      final ids = List.generate(
+          50, (_) => TimerModel(title: 'Tea', remainingSeconds: 60).id);
+
+      expect(ids.toSet().length, 50);
+    });
+
+    test('the id survives saving and loading', () {
+      final original = TimerModel(title: 'Tea', remainingSeconds: 60);
+
+      final loaded = TimerModel.fromMap(original.toMap());
+
+      expect(loaded.id, original.id);
+    });
+
+    test('a timer saved before ids existed gets one when loaded', () {
+      final loaded = TimerModel.fromMap({
+        'title': 'Tea',
+        'initialSeconds': 60,
+        'remainingSeconds': 60,
+        'isRunning': false,
+      });
+
+      expect(loaded.id, isNonNegative);
+    });
+  });
+
   group('TimerModel saving and loading', () {
     test('a paused timer survives a round trip', () {
       final original = TimerModel(title: 'Tea', remainingSeconds: 90)

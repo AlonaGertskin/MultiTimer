@@ -1,15 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'id_generator.dart';
 
 class TimerModel {
-  static int _lastId = 0;
-
-  static int _newId() {
-    final id = DateTime.now().millisecondsSinceEpoch % 2147483647;
-    _lastId = id > _lastId ? id : _lastId + 1;
-    return _lastId;
-  }
-
   final int id;
   String title;
   int remainingSeconds;
@@ -26,7 +19,7 @@ class TimerModel {
     this.isRunning = false,
     this.endTime,
     DateTime Function()? now,
-  })  : id = id ?? _newId(),
+  })  : id = id ?? newId(),
         initialSeconds = remainingSeconds,
         _now = now ?? DateTime.now;
 

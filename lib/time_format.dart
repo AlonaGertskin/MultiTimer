@@ -1,3 +1,14 @@
+String formatClock(int totalSeconds) {
+  final prefix = totalSeconds < 0 ? '-' : '';
+  final absSeconds = totalSeconds.abs();
+
+  final h = (absSeconds ~/ 3600).toString().padLeft(2, '0');
+  final m = (absSeconds % 3600 ~/ 60).toString().padLeft(2, '0');
+  final s = (absSeconds % 60).toString().padLeft(2, '0');
+
+  return '$prefix$h:$m:$s';
+}
+
 String formatSeconds(int totalSeconds) {
   bool isNegative = totalSeconds < 0;
   int absSeconds = totalSeconds.abs();

@@ -20,7 +20,7 @@ class TimerCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  String formatTime(int totalSeconds) => formatSeconds(totalSeconds);
+  String formatTime(int totalSeconds) => formatClock(totalSeconds);
 
   @override
   Widget build(BuildContext context) {

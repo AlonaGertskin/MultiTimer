@@ -11,7 +11,7 @@ class MyMainPage extends StatefulWidget {
   State<MyMainPage> createState() => _MyMainPageState();
 }
 
-class _MyMainPageState extends State<MyMainPage> {
+class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   List<TimerModel> timers = [];
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _hoursController = TextEditingController();
@@ -21,26 +21,31 @@ class _MyMainPageState extends State<MyMainPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadTimers();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    setState(() {
+      for (var timer in timers) {
+        if (timer.isRunning) timer.syncWithClock();
+      }
+    });
   }
 
   Future<void> _loadTimers() async {
     final prefs = await SharedPreferences.getInstance();
     final String? timersJson = prefs.getString('saved_timers');
-    if (timersJson != null) {
-      final List<dynamic> decoded = jsonDecode(timersJson);
-      setState(() {
-        timers = decoded.map((item) => TimerModel.fromMap(item)).toList();
-      });
+    if (timersJson == null || !mounted) return;
 
-      // Automatically restart the background processes for running timers
-      for (var timer in timers) {
-        if (timer.isRunning) {
-          // We set isRunning to false temporarily so .start() doesn't exit early
-          timer.isRunning = false; 
-          startTimer(timer);
-        }
-      }
+    setState(() {
+      timers = TimerModel.listFromJson(timersJson);
+    });
+
+    for (var timer in timers) {
+      if (timer.isRunning) startTimer(timer);
     }
   }
 
@@ -182,6 +187,7 @@ class _MyMainPageState extends State<MyMainPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (var timer in timers) {
       timer.internalTimer?.cancel();
     }

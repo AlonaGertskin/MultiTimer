@@ -18,6 +18,42 @@ void main() {
   String textIn(WidgetTester tester, String label) =>
       tester.widget<TextField>(field(label)).controller!.text;
 
+  group('Add dialog text fields', () {
+    testWidgets('the title starts with a capital letter automatically',
+        (tester) async {
+      await openAddDialog(tester);
+
+      final title = tester.widget<TextField>(field('Timer Title'));
+
+      expect(title.textCapitalization, TextCapitalization.sentences);
+    });
+
+    testWidgets('the next key on the title moves to hours', (tester) async {
+      await openAddDialog(tester);
+
+      await tester.enterText(field('Timer Title'), 'Tea');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+      tester.testTextInput.enterText('02');
+      await tester.pump();
+
+      expect(textIn(tester, 'HH'), '02');
+      expect(textIn(tester, 'Timer Title'), 'Tea');
+    });
+
+    testWidgets('hours and minutes show next, seconds shows done',
+        (tester) async {
+      await openAddDialog(tester);
+
+      expect(tester.widget<TextField>(field('HH')).textInputAction,
+          TextInputAction.next);
+      expect(tester.widget<TextField>(field('MM')).textInputAction,
+          TextInputAction.next);
+      expect(tester.widget<TextField>(field('SS')).textInputAction,
+          TextInputAction.done);
+    });
+  });
+
   group('Add dialog time fields', () {
     testWidgets('a full hours field moves on to minutes', (tester) async {
       await openAddDialog(tester);
@@ -64,7 +100,7 @@ void main() {
       tester.testTextInput.enterText('30');
       await tester.pump();
 
-      expect(textIn(tester, 'MM'), '8');
+      expect(textIn(tester, 'MM'), '08');
       expect(textIn(tester, 'SS'), '30');
     });
 
@@ -88,8 +124,57 @@ void main() {
       await tester.enterText(field('SS'), '8');
       await tester.pump();
 
-      expect(textIn(tester, 'SS'), '8');
+      expect(textIn(tester, 'SS'), '08');
       expect(tester.testTextInput.isVisible, false);
+    });
+
+    testWidgets('a single digit is completed to two digits when you leave',
+        (tester) async {
+      await openAddDialog(tester);
+
+      await tester.enterText(field('MM'), '5');
+      await tester.pump();
+      expect(textIn(tester, 'MM'), '5');
+
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+
+      expect(textIn(tester, 'MM'), '05');
+    });
+
+    testWidgets('a single digit is completed when you tap another field',
+        (tester) async {
+      await openAddDialog(tester);
+
+      await tester.enterText(field('HH'), '1');
+      await tester.enterText(field('SS'), '3');
+      await tester.pump();
+
+      expect(textIn(tester, 'HH'), '01');
+      expect(textIn(tester, 'SS'), '3');
+    });
+
+    testWidgets('a zero is completed to 00 but an empty field stays empty',
+        (tester) async {
+      await openAddDialog(tester);
+
+      await tester.enterText(field('HH'), '0');
+      await tester.enterText(field('MM'), '');
+      await tester.enterText(field('SS'), '5');
+      await tester.pump();
+
+      expect(textIn(tester, 'HH'), '00');
+      expect(textIn(tester, 'MM'), '');
+    });
+
+    testWidgets('two digits are left as they are', (tester) async {
+      await openAddDialog(tester);
+
+      await tester.enterText(field('HH'), '12');
+      await tester.enterText(field('SS'), '5');
+      await tester.pump();
+
+      expect(textIn(tester, 'HH'), '12');
     });
 
     testWidgets('a single digit above 5 in hours does not move on',

@@ -144,6 +144,8 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
               TextField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Timer Title'),
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 16),
               TimeFields(controller: _timeController),

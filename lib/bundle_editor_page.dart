@@ -91,6 +91,8 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Bundle name'),
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
           for (final row in _rows)
@@ -107,16 +109,25 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
                             controller: row.title,
                             decoration:
                                 const InputDecoration(labelText: 'Timer name'),
+                            textCapitalization: TextCapitalization.sentences,
+                            textInputAction: TextInputAction.next,
                           ),
                           const SizedBox(height: 8),
-                          TimeFields(controller: row.time),
+                          TimeFields(
+                            controller: row.time,
+                            lastAction: row == _rows.last
+                                ? TextInputAction.done
+                                : TextInputAction.next,
+                          ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      tooltip: 'Remove timer',
-                      onPressed: () => _removeRow(row),
+                    ExcludeFocus(
+                      child: IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Remove timer',
+                        onPressed: () => _removeRow(row),
+                      ),
                     ),
                   ],
                 ),

@@ -88,6 +88,77 @@ void main() {
     });
   });
 
+  group('Bundle editor text fields', () {
+    testWidgets('names start with a capital letter automatically',
+        (tester) async {
+      await openEditor(tester);
+
+      expect(tester.widget<TextField>(field('Bundle name')).textCapitalization,
+          TextCapitalization.sentences);
+      expect(
+          tester.widget<TextField>(field('Timer name')).textCapitalization,
+          TextCapitalization.sentences);
+    });
+
+    testWidgets('the next key goes from the bundle name to the first timer',
+        (tester) async {
+      await openEditor(tester);
+
+      await tester.enterText(field('Bundle name'), 'Dinner');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+      tester.testTextInput.enterText('Pasta');
+      await tester.pump();
+
+      expect(tester.widget<TextField>(field('Timer name')).controller!.text,
+          'Pasta');
+    });
+
+    testWidgets('the next key on a timer name moves to its hours',
+        (tester) async {
+      await openEditor(tester);
+
+      await tester.enterText(field('Timer name'), 'Pasta');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+      tester.testTextInput.enterText('02');
+      await tester.pump();
+
+      expect(tester.widget<TextField>(field('HH')).controller!.text, '02');
+      expect(tester.widget<TextField>(field('Timer name')).controller!.text,
+          'Pasta');
+    });
+
+    testWidgets('the next key on seconds moves to the next timer name',
+        (tester) async {
+      await openEditor(tester);
+      await tester.tap(find.text('Add timer'));
+      await tester.pump();
+
+      await tester.enterText(field('SS').first, '1');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+      tester.testTextInput.enterText('Sauce');
+      await tester.pump();
+
+      expect(
+          tester.widget<TextField>(field('Timer name').last).controller!.text,
+          'Sauce');
+    });
+
+    testWidgets('seconds show next, except in the last timer which shows done',
+        (tester) async {
+      await openEditor(tester);
+      await tester.tap(find.text('Add timer'));
+      await tester.pump();
+
+      expect(tester.widget<TextField>(field('SS').first).textInputAction,
+          TextInputAction.next);
+      expect(tester.widget<TextField>(field('SS').last).textInputAction,
+          TextInputAction.done);
+    });
+  });
+
   group('Bundle editor', () {
     testWidgets('asks for a bundle name', (tester) async {
       await openEditor(tester);

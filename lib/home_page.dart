@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'max_value_formatter.dart';
+import 'bundles_page.dart';
 import 'notification_service.dart';
+import 'time_fields.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
@@ -18,9 +18,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   List<TimerModel> timers = [];
   bool _reorderMode = false;
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _hoursController = TextEditingController();
-  final TextEditingController _minutesController = TextEditingController();
-  final TextEditingController _secondsController = TextEditingController();
+  final TimeFieldsController _timeController = TimeFieldsController();
 
   @override
   void initState() {
@@ -98,40 +96,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
 
   void _clearDialogFields() {
     _titleController.clear();
-    _hoursController.clear();
-    _minutesController.clear();
-    _secondsController.clear();
-  }
-
-  Widget _timeField(
-    BuildContext context,
-    TextEditingController controller,
-    String label, {
-    int? max,
-    bool isLast = false,
-  }) {
-    return Expanded(
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(labelText: label),
-        keyboardType: TextInputType.number,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(2),
-          if (max != null) MaxValueFormatter(max),
-        ],
-        onChanged: (value) {
-          final isFull = value.length >= 2 ||
-              (max != null && value.isNotEmpty && int.parse(value) * 10 > max);
-          if (!isFull) return;
-          if (isLast) {
-            FocusScope.of(context).unfocus();
-          } else {
-            FocusScope.of(context).nextFocus();
-          }
-        },
-      ),
-    );
+    _timeController.clear();
   }
 
   void _reorderTimers(int oldIndex, int newIndex) {
@@ -141,8 +106,6 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     });
     _saveTimers();
   }
-
-  String _digits(int value) => value == 0 ? '' : value.toString();
 
   void _applyEdit(TimerModel timer, String title, int totalSeconds) {
     final durationChanged = totalSeconds != timer.initialSeconds;
@@ -166,9 +129,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     String? error;
     if (editing != null) {
       _titleController.text = editing.title;
-      _hoursController.text = _digits(editing.initialSeconds ~/ 3600);
-      _minutesController.text = _digits(editing.initialSeconds % 3600 ~/ 60);
-      _secondsController.text = _digits(editing.initialSeconds % 60);
+      _timeController.totalSeconds = editing.initialSeconds;
     } else {
       _clearDialogFields();
     }
@@ -185,16 +146,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                 decoration: const InputDecoration(labelText: 'Timer Title'),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  _timeField(context, _hoursController, 'HH'),
-                  const Text(' : '),
-                  _timeField(context, _minutesController, 'MM', max: 59),
-                  const Text(' : '),
-                  _timeField(context, _secondsController, 'SS',
-                      max: 59, isLast: true),
-                ],
-              ),
+              TimeFields(controller: _timeController),
               if (error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -214,11 +166,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                 child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () {
-                int h = int.tryParse(_hoursController.text) ?? 0;
-                int m = int.tryParse(_minutesController.text) ?? 0;
-                int s = int.tryParse(_secondsController.text) ?? 0;
-
-                int totalSeconds = (h * 3600) + (m * 60) + s;
+                final totalSeconds = _timeController.totalSeconds;
 
                 if (_titleController.text.trim().isEmpty) {
                   setDialogState(() => error = 'Please enter a title.');
@@ -255,6 +203,14 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       appBar: AppBar(
         title: const Text('Multi-Timer'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.inventory_2_outlined),
+            tooltip: 'Bundles',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BundlesPage()),
+            ),
+          ),
           IconButton(
             icon: Icon(_reorderMode ? Icons.check : Icons.swap_vert),
             tooltip: _reorderMode ? 'Done reordering' : 'Reorder timers',
@@ -315,9 +271,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       timer.internalTimer?.cancel();
     }
     _titleController.dispose();
-    _hoursController.dispose();
-    _minutesController.dispose();
-    _secondsController.dispose();
+    _timeController.dispose();
     super.dispose();
   }
 }

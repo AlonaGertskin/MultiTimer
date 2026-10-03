@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_service.dart';
 import 'timer_card.dart';
@@ -93,79 +94,93 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
+  void _clearDialogFields() {
+    _titleController.clear();
+    _hoursController.clear();
+    _minutesController.clear();
+    _secondsController.clear();
+  }
+
+  Widget _timeField(TextEditingController controller, String label) {
+    return Expanded(
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      ),
+    );
+  }
+
   void _showAddTimerDialog() {
+    String? error;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Timer'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Timer Title'),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _hoursController,
-                    decoration: const InputDecoration(labelText: 'HH'),
-                    keyboardType: TextInputType.number,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add New Timer'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Timer Title'),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _timeField(_hoursController, 'HH'),
+                  const Text(' : '),
+                  _timeField(_minutesController, 'MM'),
+                  const Text(' : '),
+                  _timeField(_secondsController, 'SS'),
+                ],
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
-                const Text(' : '),
-                Expanded(
-                  child: TextField(
-                    controller: _minutesController,
-                    decoration: const InputDecoration(labelText: 'MM'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const Text(' : '),
-                Expanded(
-                  child: TextField(
-                    controller: _secondsController,
-                    decoration: const InputDecoration(labelText: 'SS'),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  _clearDialogFields();
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                int h = int.tryParse(_hoursController.text) ?? 0;
+                int m = int.tryParse(_minutesController.text) ?? 0;
+                int s = int.tryParse(_secondsController.text) ?? 0;
+
+                int totalSeconds = (h * 3600) + (m * 60) + s;
+
+                if (_titleController.text.trim().isEmpty) {
+                  setDialogState(() => error = 'Please enter a title.');
+                } else if (totalSeconds <= 0) {
+                  setDialogState(() => error = 'Please enter a time above zero.');
+                } else {
+                  setState(() {
+                    timers.add(TimerModel(
+                      title: _titleController.text.trim(),
+                      remainingSeconds: totalSeconds,
+                    ));
+                  });
+                  _saveTimers();
+                  _clearDialogFields();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              int h = int.tryParse(_hoursController.text) ?? 0;
-              int m = int.tryParse(_minutesController.text) ?? 0;
-              int s = int.tryParse(_secondsController.text) ?? 0;
-
-              int totalSeconds = (h * 3600) + (m * 60) + s;
-
-              if (_titleController.text.isNotEmpty && totalSeconds > 0) {
-                setState(() {
-                  timers.add(TimerModel(
-                    title: _titleController.text,
-                    remainingSeconds: totalSeconds,
-                  ));
-                });
-                _saveTimers();
-
-                _titleController.clear();
-                _hoursController.clear();
-                _minutesController.clear();
-                _secondsController.clear();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }

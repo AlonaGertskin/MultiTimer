@@ -104,6 +104,12 @@ class TimerModel {
     endTime = null;
   }
 
+  void updateDuration(int seconds) {
+    stop();
+    initialSeconds = seconds;
+    remainingSeconds = seconds;
+  }
+
   void reset() {
     stop();
     remainingSeconds = initialSeconds;

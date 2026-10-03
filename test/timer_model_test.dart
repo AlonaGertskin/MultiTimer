@@ -163,6 +163,35 @@ void main() {
     });
   });
 
+  group('TimerModel.updateDuration', () {
+    testWidgets('sets the new duration and stops a running timer',
+        (tester) async {
+      final timer = newTimer(60);
+
+      timer.start(() {});
+      await pass(tester, 10);
+      timer.updateDuration(120);
+
+      expect(timer.remainingSeconds, 120);
+      expect(timer.initialSeconds, 120);
+      expect(timer.isRunning, false);
+      expect(timer.endTime, isNull);
+
+      await pass(tester, 5);
+      expect(timer.remainingSeconds, 120);
+    });
+
+    test('reset goes back to the new duration', () {
+      final timer = newTimer(60)..remainingSeconds = 5;
+
+      timer.updateDuration(90);
+      timer.remainingSeconds = 10;
+      timer.reset();
+
+      expect(timer.remainingSeconds, 90);
+    });
+  });
+
   group('TimerModel ids', () {
     test('every timer gets its own id', () {
       final ids = List.generate(

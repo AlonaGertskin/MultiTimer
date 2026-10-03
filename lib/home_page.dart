@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'max_value_formatter.dart';
 import 'notification_service.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
@@ -101,13 +102,33 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _secondsController.clear();
   }
 
-  Widget _timeField(TextEditingController controller, String label) {
+  Widget _timeField(
+    BuildContext context,
+    TextEditingController controller,
+    String label, {
+    int? max,
+    bool isLast = false,
+  }) {
     return Expanded(
       child: TextField(
         controller: controller,
         decoration: InputDecoration(labelText: label),
         keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(2),
+          if (max != null) MaxValueFormatter(max),
+        ],
+        onChanged: (value) {
+          final isFull = value.length >= 2 ||
+              (max != null && value.isNotEmpty && int.parse(value) * 10 > max);
+          if (!isFull) return;
+          if (isLast) {
+            FocusScope.of(context).unfocus();
+          } else {
+            FocusScope.of(context).nextFocus();
+          }
+        },
       ),
     );
   }
@@ -157,11 +178,12 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  _timeField(_hoursController, 'HH'),
+                  _timeField(context, _hoursController, 'HH'),
                   const Text(' : '),
-                  _timeField(_minutesController, 'MM'),
+                  _timeField(context, _minutesController, 'MM', max: 59),
                   const Text(' : '),
-                  _timeField(_secondsController, 'SS'),
+                  _timeField(context, _secondsController, 'SS',
+                      max: 59, isLast: true),
                 ],
               ),
               if (error != null)

@@ -44,5 +44,5 @@ The project is currently in active development with the following professional m
 
     [x] Persistence Layer: Implementation of local storage for session recovery and state persistence across application lifecycles.
     [x] Clock-Accurate Countdowns: Displayed time is calculated from each timer's end time, so it stays correct when the app is paused or in the background.
-    [ ] Background Notification Services: Integration of system-level alerts for stage completion during background execution.
+    [x] Background Notification Services: Integration of system-level alerts for stage completion during background execution.
     [ ] Programmable Workflow Templates: Support for user-defined multi-stage configurations.

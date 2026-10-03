@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'notification_service.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
@@ -59,6 +60,11 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     timer.start(() {
       if (mounted) setState(() {});
     });
+    NotificationService.instance.schedule(
+      id: timer.id,
+      title: timer.title,
+      when: timer.endTime!,
+    );
     _saveTimers();
   }
 
@@ -66,6 +72,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     setState(() {
       timer.stop();
     });
+    NotificationService.instance.cancel(timer.id);
     _saveTimers();
   }
 
@@ -73,6 +80,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     setState(() {
       timer.reset();
     });
+    NotificationService.instance.cancel(timer.id);
     _saveTimers();
   }
 
@@ -81,6 +89,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       timer.stop();
       timers.remove(timer);
     });
+    NotificationService.instance.cancel(timer.id);
     _saveTimers();
   }
 

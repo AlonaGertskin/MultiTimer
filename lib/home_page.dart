@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bundle_model.dart';
 import 'bundles_page.dart';
 import 'confirm_discard.dart';
 import 'notification_service.dart';
+import 'swipe_to_delete.dart';
 import 'time_fields.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
@@ -93,6 +95,37 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       timers.remove(timer);
     });
     NotificationService.instance.cancel(timer.id);
+    _saveTimers();
+  }
+
+  void _deleteWithUndo(TimerModel timer) {
+    final index = timers.indexOf(timer);
+    final end = timer.isRunning ? timer.endTime : null;
+    deleteTimer(timer);
+    showUndoSnackBar(
+      context,
+      '${timer.title} deleted',
+      () => _restoreTimer(timer, index, end),
+    );
+  }
+
+  void _restoreTimer(TimerModel timer, int index, DateTime? end) {
+    if (!mounted) return;
+    setState(() {
+      timers.insert(index.clamp(0, timers.length), timer);
+      if (end != null) {
+        timer.resume(end, () {
+          if (mounted) setState(() {});
+        });
+      }
+    });
+    if (end != null) {
+      NotificationService.instance.schedule(
+        id: timer.id,
+        title: timer.title,
+        when: end,
+      );
+    }
     _saveTimers();
   }
 
@@ -275,44 +308,53 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: ReorderableListView.builder(
-        buildDefaultDragHandles: false,
-        itemCount: timers.length,
-        onReorder: _reorderTimers,
-        itemBuilder: (context, index) {
-          final currentTimer = timers[index];
-          return ReorderableDelayedDragStartListener(
-            key: ValueKey(currentTimer.id),
-            index: index,
-            child: Row(
-              children: [
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  alignment: Alignment.centerLeft,
-                  child: _reorderMode
-                      ? ReorderableDragStartListener(
-                          index: index,
-                          child: const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 16, 0, 16),
-                            child: Icon(Icons.drag_handle),
-                          ),
-                        )
-                      : const SizedBox(width: 0),
+      body: SlidableAutoCloseBehavior(
+        child: ReorderableListView.builder(
+          buildDefaultDragHandles: false,
+          itemCount: timers.length,
+          onReorder: _reorderTimers,
+          itemBuilder: (context, index) {
+            final currentTimer = timers[index];
+            return ReorderableDelayedDragStartListener(
+              key: ValueKey(currentTimer.id),
+              index: index,
+              child: Slidable(
+                key: ValueKey('swipe-${currentTimer.id}'),
+                groupTag: 'timers',
+                enabled: !_reorderMode,
+                endActionPane: deleteActionPane(
+                  onDelete: () => _deleteWithUndo(currentTimer),
                 ),
-                Expanded(
-                  child: TimerCard(
-                    timer: currentTimer,
-                    onStart: () => startTimer(currentTimer),
-                    onPause: () => pauseTimer(currentTimer),
-                    onReset: () => resetTimer(currentTimer),
-                    onEdit: () => _showTimerDialog(editing: currentTimer),
-                    onDelete: () => deleteTimer(currentTimer),
-                  ),
+                child: Row(
+                  children: [
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      alignment: Alignment.centerLeft,
+                      child: _reorderMode
+                          ? ReorderableDragStartListener(
+                              index: index,
+                              child: const Padding(
+                                padding: EdgeInsets.fromLTRB(16, 16, 0, 16),
+                                child: Icon(Icons.drag_handle),
+                              ),
+                            )
+                          : const SizedBox(width: 0),
+                    ),
+                    Expanded(
+                      child: TimerCard(
+                        timer: currentTimer,
+                        onStart: () => startTimer(currentTimer),
+                        onPause: () => pauseTimer(currentTimer),
+                        onReset: () => resetTimer(currentTimer),
+                        onEdit: () => _showTimerDialog(editing: currentTimer),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showTimerDialog,

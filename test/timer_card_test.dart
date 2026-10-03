@@ -9,7 +9,6 @@ void main() {
     onPause: () {},
     onReset: () {},
     onEdit: () {},
-    onDelete: () {},
   );
 
   group('TimerCard.formatTime', () {

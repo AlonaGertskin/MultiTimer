@@ -83,7 +83,18 @@ class TimerModel {
 
     isRunning = true;
     endTime = _now().add(Duration(seconds: remainingSeconds));
+    _startTicking(onTick);
+  }
 
+  void resume(DateTime end, Function onTick) {
+    stop();
+    isRunning = true;
+    endTime = end;
+    syncWithClock();
+    _startTicking(onTick);
+  }
+
+  void _startTicking(Function onTick) {
     internalTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       syncWithClock();
       onTick();

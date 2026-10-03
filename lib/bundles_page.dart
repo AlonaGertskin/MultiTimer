@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'bundle_editor_page.dart';
 import 'bundle_model.dart';
 import 'bundle_store.dart';
+import 'swipe_to_delete.dart';
 import 'time_format.dart';
 
 class BundlesPage extends StatefulWidget {
@@ -37,6 +39,16 @@ class _BundlesPageState extends State<BundlesPage> {
     await _store.save(_bundles);
   }
 
+  Future<void> _deleteBundle(Bundle bundle, int index) async {
+    setState(() => _bundles.remove(bundle));
+    await _store.save(_bundles);
+    if (!mounted) return;
+    showUndoSnackBar(context, '${bundle.name} deleted', () async {
+      setState(() => _bundles.insert(index.clamp(0, _bundles.length), bundle));
+      await _store.save(_bundles);
+    });
+  }
+
   String _summary(Bundle bundle) {
     final count = bundle.items.length;
     final total = bundle.items.fold<int>(0, (sum, item) => sum + item.seconds);
@@ -57,17 +69,27 @@ class _BundlesPageState extends State<BundlesPage> {
                 ),
               ),
             )
-          : ListView.builder(
-              itemCount: _bundles.length,
-              itemBuilder: (context, index) {
-                final bundle = _bundles[index];
-                return ListTile(
-                  title: Text(bundle.name),
-                  subtitle: Text(_summary(bundle)),
-                  trailing: const Icon(Icons.playlist_add),
-                  onTap: () => Navigator.pop(context, bundle),
-                );
-              },
+          : SlidableAutoCloseBehavior(
+              child: ListView.builder(
+                itemCount: _bundles.length,
+                itemBuilder: (context, index) {
+                  final bundle = _bundles[index];
+                  return Slidable(
+                    key: ValueKey(bundle.id),
+                    groupTag: 'bundles',
+                    endActionPane: deleteActionPane(
+                      onDelete: () => _deleteBundle(bundle, index),
+                      margin: EdgeInsets.zero,
+                    ),
+                    child: ListTile(
+                      title: Text(bundle.name),
+                      subtitle: Text(_summary(bundle)),
+                      trailing: const Icon(Icons.playlist_add),
+                      onTap: () => Navigator.pop(context, bundle),
+                    ),
+                  );
+                },
+              ),
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createBundle,

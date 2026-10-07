@@ -421,29 +421,9 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                       child: _editMode
                           ? Padding(
                               padding: const EdgeInsets.only(left: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Checkbox(
-                                    value: _selectedIds.contains(
-                                      currentTimer.id,
-                                    ),
-                                    onChanged: (_) =>
-                                        _toggleSelected(currentTimer),
-                                  ),
-                                  ReorderableDragStartListener(
-                                    index: index,
-                                    child: const Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        4,
-                                        16,
-                                        0,
-                                        16,
-                                      ),
-                                      child: Icon(Icons.drag_handle),
-                                    ),
-                                  ),
-                                ],
+                              child: Checkbox(
+                                value: _selectedIds.contains(currentTimer.id),
+                                onChanged: (_) => _toggleSelected(currentTimer),
                               ),
                             )
                           : const SizedBox(width: 0),
@@ -456,6 +436,19 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                         onReset: () => resetTimer(currentTimer),
                         onEdit: () => _showTimerDialog(editing: currentTimer),
                       ),
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      alignment: Alignment.centerRight,
+                      child: _editMode
+                          ? ReorderableDragStartListener(
+                              index: index,
+                              child: const Padding(
+                                padding: EdgeInsets.fromLTRB(0, 16, 12, 16),
+                                child: Icon(Icons.drag_handle),
+                              ),
+                            )
+                          : const SizedBox(width: 0),
                     ),
                   ],
                 ),

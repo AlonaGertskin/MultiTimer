@@ -6,6 +6,12 @@ import 'time_fields.dart';
 class _ItemRow {
   final TextEditingController title = TextEditingController();
   final TimeFieldsController time = TimeFieldsController();
+  final bool startsNext;
+
+  _ItemRow({String title = '', int seconds = 0, this.startsNext = false}) {
+    this.title.text = title;
+    if (seconds > 0) time.totalSeconds = seconds;
+  }
 
   void dispose() {
     title.dispose();
@@ -14,15 +20,28 @@ class _ItemRow {
 }
 
 class BundleEditorPage extends StatefulWidget {
-  const BundleEditorPage({super.key});
+  final Bundle? editing;
+
+  const BundleEditorPage({super.key, this.editing});
 
   @override
   State<BundleEditorPage> createState() => _BundleEditorPageState();
 }
 
 class _BundleEditorPageState extends State<BundleEditorPage> {
-  final TextEditingController _nameController = TextEditingController();
-  final List<_ItemRow> _rows = [_ItemRow()];
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.editing?.name,
+  );
+  late final List<_ItemRow> _rows = widget.editing == null
+      ? [_ItemRow()]
+      : [
+          for (final item in widget.editing!.items)
+            _ItemRow(
+              title: item.title,
+              seconds: item.seconds,
+              startsNext: item.startsNext,
+            ),
+        ];
   String? _error;
 
   void _addRow() {
@@ -34,7 +53,23 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
     row.dispose();
   }
 
-  bool get _hasChanges =>
+  bool get _hasChanges {
+    final original = widget.editing;
+    if (original == null) return _hasContent;
+    if (_nameController.text.trim() != original.name) return true;
+    if (_rows.length != original.items.length) return true;
+    for (var i = 0; i < _rows.length; i++) {
+      final row = _rows[i];
+      final item = original.items[i];
+      if (row.title.text.trim() != item.title ||
+          row.time.totalSeconds != item.seconds) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool get _hasContent =>
       _nameController.text.trim().isNotEmpty ||
       _rows.length != 1 ||
       _rows.any(
@@ -76,12 +111,14 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
     Navigator.pop(
       context,
       Bundle(
+        id: widget.editing?.id,
         name: name,
         items: [
           for (final row in _rows)
             BundleItem(
               title: row.title.text.trim(),
               seconds: row.time.totalSeconds,
+              startsNext: row.startsNext,
             ),
         ],
       ),
@@ -111,7 +148,7 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Bundle'),
+        title: Text(widget.editing == null ? 'New Bundle' : 'Edit Bundle'),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: ReorderableListView.builder(

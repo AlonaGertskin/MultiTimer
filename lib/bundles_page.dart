@@ -41,6 +41,21 @@ class _BundlesPageState extends State<BundlesPage> {
     await _store.save(_bundles);
   }
 
+  Future<void> _editBundle(Bundle bundle) async {
+    final edited = await Navigator.push<Bundle>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BundleEditorPage(editing: bundle),
+      ),
+    );
+    if (edited == null) return;
+    setState(() {
+      final index = _bundles.indexOf(bundle);
+      if (index >= 0) _bundles[index] = edited;
+    });
+    await _store.save(_bundles);
+  }
+
   Future<void> _deleteWithUndo(List<Bundle> toDelete) async {
     if (toDelete.isEmpty) return;
     final removed = [
@@ -178,7 +193,17 @@ class _BundlesPageState extends State<BundlesPage> {
                     child: Icon(Icons.drag_handle),
                   ),
                 )
-              : const Icon(Icons.playlist_add),
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: 'Edit bundle',
+                      onPressed: () => _editBundle(bundle),
+                    ),
+                    const Icon(Icons.playlist_add),
+                  ],
+                ),
           onTap: _editMode
               ? () => _toggleSelected(bundle)
               : () => Navigator.pop(context, bundle),

@@ -66,18 +66,18 @@ void main() {
       await openPage(tester);
       expect(find.byIcon(Icons.drag_handle), findsNothing);
 
-      await tester.tap(find.byTooltip('Reorder timers'));
+      await tester.tap(find.byTooltip('Edit list'));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
 
-      await tester.tap(find.byTooltip('Done reordering'));
+      await tester.tap(find.byTooltip('Done'));
       await tester.pump();
       expect(find.byIcon(Icons.drag_handle), findsNothing);
     });
 
     testWidgets('a handle drags right away, without holding', (tester) async {
       await openPage(tester);
-      await tester.tap(find.byTooltip('Reorder timers'));
+      await tester.tap(find.byTooltip('Edit list'));
       await tester.pumpAndSettle();
 
       final gesture = await tester
@@ -95,7 +95,7 @@ void main() {
     testWidgets('holding and dragging still works in reorder mode',
         (tester) async {
       await openPage(tester);
-      await tester.tap(find.byTooltip('Reorder timers'));
+      await tester.tap(find.byTooltip('Edit list'));
       await tester.pumpAndSettle();
 
       await dragDown(tester, 'First', 160);

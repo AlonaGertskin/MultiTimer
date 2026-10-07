@@ -16,6 +16,8 @@ class BundlesPage extends StatefulWidget {
 class _BundlesPageState extends State<BundlesPage> {
   final BundleStore _store = BundleStore();
   List<Bundle> _bundles = [];
+  bool _editMode = false;
+  final Set<int> _selectedIds = {};
 
   @override
   void initState() {
@@ -39,14 +41,67 @@ class _BundlesPageState extends State<BundlesPage> {
     await _store.save(_bundles);
   }
 
-  Future<void> _deleteBundle(Bundle bundle, int index) async {
-    setState(() => _bundles.remove(bundle));
+  Future<void> _deleteWithUndo(List<Bundle> toDelete) async {
+    if (toDelete.isEmpty) return;
+    final removed = [
+      for (final bundle in toDelete) (_bundles.indexOf(bundle), bundle),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    setState(() {
+      _bundles.removeWhere(toDelete.contains);
+      _selectedIds.removeAll(toDelete.map((bundle) => bundle.id));
+    });
     await _store.save(_bundles);
     if (!mounted) return;
-    showUndoSnackBar(context, '${bundle.name} deleted', () async {
-      setState(() => _bundles.insert(index.clamp(0, _bundles.length), bundle));
+    final message = toDelete.length == 1
+        ? '${toDelete.first.name} deleted'
+        : '${toDelete.length} bundles deleted';
+    showUndoSnackBar(context, message, () async {
+      setState(() {
+        for (final (index, bundle) in removed) {
+          _bundles.insert(index.clamp(0, _bundles.length), bundle);
+        }
+      });
       await _store.save(_bundles);
     });
+  }
+
+  void _setEditMode(bool on) {
+    setState(() {
+      _editMode = on;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelected(Bundle bundle) {
+    setState(() {
+      if (!_selectedIds.remove(bundle.id)) _selectedIds.add(bundle.id);
+    });
+  }
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selectedIds.length == _bundles.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds
+          ..clear()
+          ..addAll(_bundles.map((bundle) => bundle.id));
+      }
+    });
+  }
+
+  void _deleteSelected() {
+    _deleteWithUndo(
+      _bundles.where((bundle) => _selectedIds.contains(bundle.id)).toList(),
+    );
+  }
+
+  Future<void> _reorderBundles(int oldIndex, int newIndex) async {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      _bundles.insert(newIndex, _bundles.removeAt(oldIndex));
+    });
+    await _store.save(_bundles);
   }
 
   String _summary(Bundle bundle) {
@@ -55,10 +110,87 @@ class _BundlesPageState extends State<BundlesPage> {
     return '$count ${count == 1 ? 'timer' : 'timers'} · ${formatSeconds(total)} total';
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    if (!_editMode) {
+      return AppBar(
+        title: const Text('Bundles'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.checklist),
+            tooltip: 'Edit list',
+            onPressed: () => _setEditMode(true),
+          ),
+        ],
+      );
+    }
+    return AppBar(
+      title: Text(
+        _selectedIds.isEmpty
+            ? 'Select bundles'
+            : '${_selectedIds.length} selected',
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          tooltip: 'Select all',
+          onPressed: _bundles.isEmpty ? null : _toggleSelectAll,
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: 'Delete selected',
+          onPressed: _selectedIds.isEmpty ? null : _deleteSelected,
+        ),
+        IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: 'Done',
+          onPressed: () => _setEditMode(false),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRow(Bundle bundle, int index) {
+    return ReorderableDelayedDragStartListener(
+      key: ValueKey(bundle.id),
+      index: index,
+      child: Slidable(
+        key: ValueKey('swipe-${bundle.id}'),
+        groupTag: 'bundles',
+        enabled: !_editMode,
+        endActionPane: deleteActionPane(
+          onDelete: () => _deleteWithUndo([bundle]),
+          margin: EdgeInsets.zero,
+        ),
+        child: ListTile(
+          leading: _editMode
+              ? Checkbox(
+                  value: _selectedIds.contains(bundle.id),
+                  onChanged: (_) => _toggleSelected(bundle),
+                )
+              : null,
+          title: Text(bundle.name),
+          subtitle: Text(_summary(bundle)),
+          trailing: _editMode
+              ? ReorderableDragStartListener(
+                  index: index,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(Icons.drag_handle),
+                  ),
+                )
+              : const Icon(Icons.playlist_add),
+          onTap: _editMode
+              ? () => _toggleSelected(bundle)
+              : () => Navigator.pop(context, bundle),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bundles')),
+      appBar: _buildAppBar(),
       body: _bundles.isEmpty
           ? const Center(
               child: Padding(
@@ -70,32 +202,21 @@ class _BundlesPageState extends State<BundlesPage> {
               ),
             )
           : SlidableAutoCloseBehavior(
-              child: ListView.builder(
+              child: ReorderableListView.builder(
+                buildDefaultDragHandles: false,
                 itemCount: _bundles.length,
-                itemBuilder: (context, index) {
-                  final bundle = _bundles[index];
-                  return Slidable(
-                    key: ValueKey(bundle.id),
-                    groupTag: 'bundles',
-                    endActionPane: deleteActionPane(
-                      onDelete: () => _deleteBundle(bundle, index),
-                      margin: EdgeInsets.zero,
-                    ),
-                    child: ListTile(
-                      title: Text(bundle.name),
-                      subtitle: Text(_summary(bundle)),
-                      trailing: const Icon(Icons.playlist_add),
-                      onTap: () => Navigator.pop(context, bundle),
-                    ),
-                  );
-                },
+                onReorder: _reorderBundles,
+                itemBuilder: (context, index) =>
+                    _buildRow(_bundles[index], index),
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createBundle,
-        icon: const Icon(Icons.add),
-        label: const Text('New bundle'),
-      ),
+      floatingActionButton: _editMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _createBundle,
+              icon: const Icon(Icons.add),
+              label: const Text('New bundle'),
+            ),
     );
   }
 }

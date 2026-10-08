@@ -41,4 +41,22 @@ void main() {
       greaterThan(saturation(readyCardColor(lightColors))),
     );
   });
+
+  double contrast(Color a, Color b) {
+    final light = [brightness(a), brightness(b)]..sort();
+    return (light[1] + 0.05) / (light[0] + 0.05);
+  }
+
+  for (final (name, colors) in [('light', lightColors), ('dark', darkColors)]) {
+    test('$name: the empty part of a progress bar shows on every card', () {
+      for (final card in [
+        readyCardColor(colors),
+        runningCardColor(colors),
+        finishedCardColor(colors),
+      ]) {
+        final track = Color.alphaBlend(progressTrackColor(colors), card);
+        expect(contrast(track, card), greaterThanOrEqualTo(1.2));
+      }
+    });
+  }
 }

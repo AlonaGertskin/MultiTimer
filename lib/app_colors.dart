@@ -14,3 +14,6 @@ Color runningCardColor(ColorScheme colors) =>
     Color.lerp(colors.primaryContainer, colors.primary, 0.25)!;
 
 Color finishedCardColor(ColorScheme colors) => colors.primaryContainer;
+
+Color progressTrackColor(ColorScheme colors) =>
+    colors.primary.withValues(alpha: 0.25);

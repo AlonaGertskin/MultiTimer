@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'card_parts.dart';
 import 'chain_model.dart';
 import 'time_format.dart';
 
@@ -25,11 +26,6 @@ class ChainCard extends StatelessWidget {
     required this.onRestart,
     required this.onDetails,
   });
-
-  static const _timeStyle = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +90,10 @@ class ChainCard extends StatelessWidget {
           Expanded(
             child: Text(title, style: Theme.of(context).textTheme.titleMedium),
           ),
-          Text(formatClock(chain.remainingSeconds), style: _timeStyle),
+          Text(
+            formatClock(chain.remainingSeconds),
+            style: cardTimeStyle(context),
+          ),
         ],
       ),
     );
@@ -219,7 +218,7 @@ class ChainProgressStrip extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(3),
                 child: Container(
-                  color: colors.surfaceContainerHighest,
+                  color: progressTrackColor(colors),
                   alignment: Alignment.centerLeft,
                   child: FractionallySizedBox(
                     widthFactor: _fill(i),

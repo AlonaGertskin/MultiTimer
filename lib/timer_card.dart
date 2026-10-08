@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 import 'time_format.dart';
 import 'timer_model.dart';
 
@@ -27,7 +28,11 @@ class TimerCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: finished ? colors.secondaryContainer : null,
+      color: finished
+          ? finishedCardColor(colors)
+          : timer.isRunning
+          ? runningCardColor(colors)
+          : readyCardColor(colors),
       child: Column(
         children: [
           ListTile(
@@ -37,7 +42,11 @@ class TimerCard extends StatelessWidget {
             title: Text(timer.title),
             trailing: Text(
               formatTime(timer.remainingSeconds),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colors.onSurface,
+              ),
             ),
           ),
           Padding(

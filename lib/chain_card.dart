@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 import 'chain_model.dart';
 import 'time_format.dart';
 
@@ -37,7 +38,11 @@ class ChainCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: needsYou ? theme.colorScheme.secondaryContainer : null,
+      color: needsYou
+          ? finishedCardColor(theme.colorScheme)
+          : chain.isRunning
+          ? runningCardColor(theme.colorScheme)
+          : readyCardColor(theme.colorScheme),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
         child: Column(

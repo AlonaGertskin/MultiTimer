@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:multitimer/app_colors.dart';
 import 'package:multitimer/chain_card.dart';
 import 'package:multitimer/chain_model.dart';
 import 'package:multitimer/timer_card.dart';
@@ -51,7 +53,7 @@ void main() {
         ),
       );
 
-      expect(cardColor(tester), isNot(colors.secondaryContainer));
+      expect(cardColor(tester), isNot(finishedCardColor(colors)));
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_outline), findsNothing);
       expect(timeColor(tester, '00:05:00'), isNot(colors.error));
@@ -65,7 +67,7 @@ void main() {
         ),
       );
 
-      expect(cardColor(tester), colors.secondaryContainer);
+      expect(cardColor(tester), finishedCardColor(colors));
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
       expect(timeColor(tester, '00:00:00'), isNot(colors.error));
@@ -79,7 +81,7 @@ void main() {
         ),
       );
 
-      expect(cardColor(tester), colors.secondaryContainer);
+      expect(cardColor(tester), finishedCardColor(colors));
       expect(timeColor(tester, '-00:01:12'), isNot(colors.error));
     });
 
@@ -91,7 +93,7 @@ void main() {
         timerCard(TimerModel(title: 'Tea', remainingSeconds: -12)),
       );
 
-      expect(cardColor(tester), colors.secondaryContainer);
+      expect(cardColor(tester), finishedCardColor(colors));
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
       expect(timeColor(tester, '-00:00:12'), isNot(colors.error));
     });
@@ -133,6 +135,145 @@ void main() {
 
       expect(find.text('Dinner complete'), findsOneWidget);
       expect(timeColor(tester, '-00:00:30'), isNot(colors.error));
+    });
+  });
+
+  group('The time on a timer card', () {
+    Future<Color?> drawnTimeColor(
+      WidgetTester tester,
+      Brightness brightness,
+      Widget card,
+      String time,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: brightness),
+          home: Scaffold(body: card),
+        ),
+      );
+      return tester
+          .renderObject<RenderParagraph>(find.text(time))
+          .text
+          .style
+          ?.color;
+    }
+
+    for (final brightness in Brightness.values) {
+      testWidgets('has the same colour as on a chain card '
+          '(${brightness.name})', (tester) async {
+        final onChain = await drawnTimeColor(
+          tester,
+          brightness,
+          chainCard(
+            ChainModel(
+              name: 'Dinner',
+              steps: [
+                ChainStep(title: 'Pasta', seconds: 300),
+                ChainStep(title: 'Sauce', seconds: 600),
+              ],
+            ),
+          ),
+          '00:05:00',
+        );
+        final onTimer = await drawnTimeColor(
+          tester,
+          brightness,
+          timerCard(TimerModel(title: 'Tea', remainingSeconds: 300)),
+          '00:05:00',
+        );
+
+        expect(onTimer, onChain);
+      });
+    }
+  });
+
+  group('Card colour by state', () {
+    ChainModel dinner({
+      int currentIndex = 0,
+      int? remaining,
+      bool isRunning = false,
+    }) => ChainModel(
+      name: 'Dinner',
+      steps: [
+        ChainStep(title: 'Pasta', seconds: 600),
+        ChainStep(title: 'Sauce', seconds: 900),
+      ],
+      currentIndex: currentIndex,
+      remainingSeconds: remaining,
+      isRunning: isRunning,
+    );
+
+    testWidgets('a ready timer keeps the normal card colour', (tester) async {
+      final colors = await pump(
+        tester,
+        timerCard(TimerModel(title: 'Tea', remainingSeconds: 300)),
+      );
+
+      expect(cardColor(tester), readyCardColor(colors));
+    });
+
+    testWidgets('a paused timer keeps the normal card colour', (tester) async {
+      final colors = await pump(
+        tester,
+        timerCard(
+          TimerModel(title: 'Tea', remainingSeconds: 300)
+            ..remainingSeconds = 120,
+        ),
+      );
+
+      expect(cardColor(tester), readyCardColor(colors));
+    });
+
+    testWidgets('a running timer gets the running colour', (tester) async {
+      final colors = await pump(
+        tester,
+        timerCard(
+          TimerModel(title: 'Tea', remainingSeconds: 300)..isRunning = true,
+        ),
+      );
+
+      expect(cardColor(tester), runningCardColor(colors));
+    });
+
+    testWidgets('a ready chain keeps the normal card colour', (tester) async {
+      final colors = await pump(tester, chainCard(dinner()));
+
+      expect(cardColor(tester), readyCardColor(colors));
+    });
+
+    testWidgets('a paused chain keeps the normal card colour', (tester) async {
+      final colors = await pump(tester, chainCard(dinner(remaining: 200)));
+
+      expect(cardColor(tester), readyCardColor(colors));
+    });
+
+    testWidgets('a running chain gets the running colour', (tester) async {
+      final colors = await pump(
+        tester,
+        chainCard(dinner(remaining: 200, isRunning: true)),
+      );
+
+      expect(cardColor(tester), runningCardColor(colors));
+    });
+
+    testWidgets('a chain waiting for Continue gets the finished colour', (
+      tester,
+    ) async {
+      final colors = await pump(
+        tester,
+        chainCard(dinner(remaining: -10, isRunning: true)),
+      );
+
+      expect(cardColor(tester), finishedCardColor(colors));
+    });
+
+    testWidgets('a complete chain gets the finished colour', (tester) async {
+      final colors = await pump(
+        tester,
+        chainCard(dinner(currentIndex: 1, remaining: -10, isRunning: true)),
+      );
+
+      expect(cardColor(tester), finishedCardColor(colors));
     });
   });
 }

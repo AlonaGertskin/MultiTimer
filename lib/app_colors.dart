@@ -7,6 +7,20 @@ final darkColors = ColorScheme.fromSeed(
   brightness: Brightness.dark,
 );
 
+final lightTheme = ThemeData(
+  fontFamily: 'Nunito',
+  colorScheme: lightColors,
+  scaffoldBackgroundColor: lightColors.surfaceContainer,
+  appBarTheme: AppBarTheme(backgroundColor: lightColors.surfaceContainer),
+  cardTheme: CardThemeData(color: readyCardColor(lightColors)),
+);
+
+final darkTheme = ThemeData(
+  fontFamily: 'Nunito',
+  colorScheme: darkColors,
+  cardTheme: CardThemeData(color: readyCardColor(darkColors)),
+);
+
 Color readyCardColor(ColorScheme colors) =>
     Color.lerp(colors.surfaceContainerHighest, colors.primaryContainer, 0.3)!;
 

@@ -8,16 +8,8 @@ Future<void> main() async {
   await NotificationService.instance.init();
   runApp(
     MaterialApp(
-      theme: ThemeData(
-        colorScheme: lightColors,
-        scaffoldBackgroundColor: lightColors.surfaceContainer,
-        appBarTheme: AppBarTheme(backgroundColor: lightColors.surfaceContainer),
-        cardTheme: CardThemeData(color: readyCardColor(lightColors)),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: darkColors,
-        cardTheme: CardThemeData(color: readyCardColor(darkColors)),
-      ),
+      theme: lightTheme,
+      darkTheme: darkTheme,
       home: const MyMainPage(),
     ),
   );

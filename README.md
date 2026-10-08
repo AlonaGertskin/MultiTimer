@@ -10,7 +10,7 @@ MultiTimer runs several countdown timers at once. Save groups of timers as bundl
 - Chains: a bundle with two or more timers runs as one card, step by step. Each link between steps is automatic or waits for you to tap Continue.
 - Everything is saved, and the time stays correct after the app was closed.
 - Swipe to delete with Undo, an edit mode to select, reorder and delete several items, and a details screen to edit a running chain.
-- A purple light theme and a green-teal dark theme that follow the phone's setting. Card colours show whether a timer is ready, running or finished.
+- A purple light theme and a green-teal dark theme that follow the phone's setting. Card colours show whether a timer is ready, running or finished. The Nunito font and a stopwatch app icon.
 
 ## System Components
 - Framework: Flutter.
@@ -27,10 +27,10 @@ MultiTimer runs several countdown timers at once. Save groups of timers as bundl
 - lib/list_item.dart: An entry in the main list, either a single timer or a chain.
 - lib/bundles_page.dart and lib/bundle_editor_page.dart: Saved bundles (named groups of timers): list, create, edit, reorder, delete and add to the timer list. A bundle with two or more timers is added as one chain. The editor also shows and edits a chain's steps.
 - lib/bundle_model.dart and lib/bundle_store.dart: The bundle data and its local storage.
-- lib/app_colors.dart: The light and dark colours, and the card colours for ready, running and finished.
+- lib/app_colors.dart: The light and dark themes (including the font), the card colours for ready, running and finished, and the swipe button colours.
 - lib/card_parts.dart: The time style shared by timer and chain cards.
 - lib/empty_list_message.dart: The message shown when there are no timers or no bundles yet.
-- lib/main.dart: The application entry point, handling global configuration and theme initialization.
+- lib/main.dart: The application entry point: starts the notification service and opens the main screen.
 
 ## Setup and Deployment
 
@@ -59,4 +59,4 @@ The project is currently in active development with the following professional m
     [x] Bundles: Saved groups of timers that are added to the list in one tap, and can be edited, reordered and deleted.
     [x] Chain Cards: A bundle shown as one card that steps through its timers, automatically or with a manual continue between steps.
     [x] Interface Polish: Light and dark themes, card colours by state, matching timer and chain cards with progress bars, messages for empty lists, bundle cards with a preview, and a compact bundle editor.
-    [ ] App icon, matching swipe button colours and a nicer font.
+    [x] Finishing Touches: App icon, matching swipe button colours and the Nunito font.

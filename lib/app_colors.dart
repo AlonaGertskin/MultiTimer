@@ -7,6 +7,20 @@ final darkColors = ColorScheme.fromSeed(
   brightness: Brightness.dark,
 );
 
+final lightTheme = ThemeData(
+  fontFamily: 'Nunito',
+  colorScheme: lightColors,
+  scaffoldBackgroundColor: lightColors.surfaceContainer,
+  appBarTheme: AppBarTheme(backgroundColor: lightColors.surfaceContainer),
+  cardTheme: CardThemeData(color: readyCardColor(lightColors)),
+);
+
+final darkTheme = ThemeData(
+  fontFamily: 'Nunito',
+  colorScheme: darkColors,
+  cardTheme: CardThemeData(color: readyCardColor(darkColors)),
+);
+
 Color readyCardColor(ColorScheme colors) =>
     Color.lerp(colors.surfaceContainerHighest, colors.primaryContainer, 0.3)!;
 
@@ -17,3 +31,8 @@ Color finishedCardColor(ColorScheme colors) => colors.primaryContainer;
 
 Color progressTrackColor(ColorScheme colors) =>
     colors.primary.withValues(alpha: 0.25);
+
+Color deleteButtonColor(ColorScheme colors) =>
+    colors.brightness == Brightness.light
+    ? Color.lerp(colors.errorContainer, colors.error, 0.2)!
+    : colors.errorContainer;

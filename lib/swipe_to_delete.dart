@@ -5,22 +5,45 @@ ActionPane deleteActionPane({
   required VoidCallback onDelete,
   EdgeInsets margin = const EdgeInsets.fromLTRB(0, 8, 16, 8),
 }) {
+  return _actionPane(
+    onPressed: onDelete,
+    margin: margin,
+    color: Colors.redAccent,
+    icon: Icons.delete_outline,
+  );
+}
+
+ActionPane restartActionPane({required VoidCallback onRestart}) {
+  return _actionPane(
+    onPressed: onRestart,
+    margin: const EdgeInsets.fromLTRB(16, 8, 0, 8),
+    color: Colors.blueAccent,
+    icon: Icons.restart_alt,
+  );
+}
+
+ActionPane _actionPane({
+  required VoidCallback onPressed,
+  required EdgeInsets margin,
+  required Color color,
+  required IconData icon,
+}) {
   return ActionPane(
     motion: const DrawerMotion(),
     extentRatio: 0.22,
     children: [
       CustomSlidableAction(
-        onPressed: (_) => onDelete(),
+        onPressed: (_) => onPressed(),
         backgroundColor: Colors.transparent,
         padding: EdgeInsets.zero,
         child: Container(
           margin: margin,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.redAccent,
+            color: color,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.delete_outline, color: Colors.white),
+          child: Icon(icon, color: Colors.white),
         ),
       ),
     ],

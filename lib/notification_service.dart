@@ -41,12 +41,13 @@ class NotificationService {
     required int id,
     required String title,
     required DateTime when,
+    String body = 'Time is up',
   }) async {
     if (!when.isAfter(DateTime.now())) return;
     await _plugin.zonedSchedule(
       id: id,
       title: title,
-      body: 'Time is up',
+      body: body,
       scheduledDate: tz.TZDateTime.from(when, tz.local),
       notificationDetails: _details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

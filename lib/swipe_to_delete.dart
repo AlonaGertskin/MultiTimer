@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'app_colors.dart';
 
 ActionPane deleteActionPane({
   required VoidCallback onDelete,
@@ -8,7 +9,7 @@ ActionPane deleteActionPane({
   return _actionPane(
     onPressed: onDelete,
     margin: margin,
-    color: Colors.redAccent,
+    colors: (scheme) => (deleteButtonColor(scheme), scheme.onErrorContainer),
     icon: Icons.delete_outline,
   );
 }
@@ -17,7 +18,7 @@ ActionPane restartActionPane({required VoidCallback onRestart}) {
   return _actionPane(
     onPressed: onRestart,
     margin: const EdgeInsets.fromLTRB(16, 8, 0, 8),
-    color: Colors.blueAccent,
+    colors: (scheme) => (scheme.primary, scheme.onPrimary),
     icon: Icons.restart_alt,
   );
 }
@@ -25,7 +26,7 @@ ActionPane restartActionPane({required VoidCallback onRestart}) {
 ActionPane _actionPane({
   required VoidCallback onPressed,
   required EdgeInsets margin,
-  required Color color,
+  required (Color, Color) Function(ColorScheme scheme) colors,
   required IconData icon,
 }) {
   return ActionPane(
@@ -36,14 +37,21 @@ ActionPane _actionPane({
         onPressed: (_) => onPressed(),
         backgroundColor: Colors.transparent,
         padding: EdgeInsets.zero,
-        child: Container(
-          margin: margin,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: Colors.white),
+        child: Builder(
+          builder: (context) {
+            final (background, foreground) = colors(
+              Theme.of(context).colorScheme,
+            );
+            return Container(
+              margin: margin,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: foreground),
+            );
+          },
         ),
       ),
     ],

@@ -59,4 +59,17 @@ void main() {
       }
     });
   }
+
+  test('light: the delete button red is a touch darker than the pale red', () {
+    final delete = deleteButtonColor(lightColors);
+    expect(
+      brightness(delete),
+      lessThan(brightness(lightColors.errorContainer)),
+    );
+    expect(brightness(delete), greaterThan(brightness(lightColors.error)));
+  });
+
+  test('dark: the delete button keeps the theme red', () {
+    expect(deleteButtonColor(darkColors), darkColors.errorContainer);
+  });
 }

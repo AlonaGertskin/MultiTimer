@@ -374,10 +374,10 @@ void main() {
       expect(find.textContaining('No bundles yet'), findsOneWidget);
     });
 
-    testWidgets('tapping a bundle still chooses it', (tester) async {
+    testWidgets('the Add button still chooses a bundle', (tester) async {
       await openBundles(tester, [dinner]);
 
-      await tester.tap(find.text('Dinner'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(find.text('Dinner deleted'), findsNothing);

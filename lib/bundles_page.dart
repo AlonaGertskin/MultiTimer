@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'app_colors.dart';
 import 'bundle_editor_page.dart';
 import 'bundle_model.dart';
 import 'bundle_store.dart';
+import 'chain_card.dart';
+import 'chain_model.dart';
 import 'empty_list_message.dart';
 import 'swipe_to_delete.dart';
 import 'time_format.dart';
@@ -167,7 +170,23 @@ class _BundlesPageState extends State<BundlesPage> {
     );
   }
 
+  ChainModel _preview(Bundle bundle) => ChainModel(
+    name: bundle.name,
+    steps: [
+      for (final item in bundle.items)
+        ChainStep(
+          title: item.title,
+          seconds: item.seconds,
+          startsNext: item.startsNext,
+        ),
+    ],
+  );
+
   Widget _buildRow(Bundle bundle, int index) {
+    final theme = Theme.of(context);
+    final soft = theme.colorScheme.onSurfaceVariant;
+    final isChain = bundle.items.length > 1;
+
     return ReorderableDelayedDragStartListener(
       key: ValueKey(bundle.id),
       index: index,
@@ -177,39 +196,101 @@ class _BundlesPageState extends State<BundlesPage> {
         enabled: !_editMode,
         endActionPane: deleteActionPane(
           onDelete: () => _deleteWithUndo([bundle]),
-          margin: EdgeInsets.zero,
         ),
-        child: ListTile(
-          leading: _editMode
-              ? Checkbox(
+        child: Row(
+          children: [
+            if (_editMode)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Checkbox(
                   value: _selectedIds.contains(bundle.id),
                   onChanged: (_) => _toggleSelected(bundle),
-                )
-              : null,
-          title: Text(bundle.name),
-          subtitle: Text(_summary(bundle)),
-          trailing: _editMode
-              ? ReorderableDragStartListener(
-                  index: index,
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(Icons.drag_handle),
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined),
-                      tooltip: 'Edit bundle',
-                      onPressed: () => _editBundle(bundle),
-                    ),
-                    const Icon(Icons.playlist_add),
-                  ],
                 ),
-          onTap: _editMode
-              ? () => _toggleSelected(bundle)
-              : () => Navigator.pop(context, bundle),
+              ),
+            Expanded(
+              child: Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: readyCardColor(theme.colorScheme),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: _editMode ? () => _toggleSelected(bundle) : null,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(isChain ? Icons.link : Icons.timer_outlined),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                bundle.name,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ),
+                            if (_editMode)
+                              const SizedBox(height: 48)
+                            else
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                tooltip: 'Edit bundle',
+                                onPressed: () => _editBundle(bundle),
+                              ),
+                          ],
+                        ),
+                        if (isChain)
+                          Text(
+                            bundle.items.map((item) => item.title).join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: soft,
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12, right: 8),
+                          child: ChainProgressStrip(chain: _preview(bundle)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _summary(bundle),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: soft,
+                                  ),
+                                ),
+                              ),
+                              if (_editMode)
+                                const SizedBox(height: 40)
+                              else
+                                FilledButton.tonalIcon(
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Add'),
+                                  onPressed: () =>
+                                      Navigator.pop(context, bundle),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (_editMode)
+              ReorderableDragStartListener(
+                index: index,
+                child: const Padding(
+                  padding: EdgeInsets.fromLTRB(0, 16, 12, 16),
+                  child: Icon(Icons.drag_handle),
+                ),
+              ),
+          ],
         ),
       ),
     );

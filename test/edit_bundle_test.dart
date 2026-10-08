@@ -181,7 +181,15 @@ void main() {
       await tester.enterText(field('Bundle name'), 'Supper');
       await save(tester);
 
-      await tester.tap(find.text('Supper'));
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Supper'),
+            matching: find.byType(Card),
+          ),
+          matching: find.text('Add'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(BundlesPage), findsNothing);

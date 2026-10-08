@@ -109,6 +109,11 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     if (mounted) setState(() {});
   }
 
+  void _changeChain(VoidCallback change) {
+    setState(change);
+    _saveTimers();
+  }
+
   String _nameOf(ListItem item) => switch (item) {
     ChainModel chain => chain.name,
     TimerModel timer => timer.title,
@@ -249,21 +254,32 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     );
     if (bundle == null || !mounted) return;
 
-    setState(() {
-      items.addAll(
-        bundle.items.map(
-          (item) =>
-              TimerModel(title: item.title, remainingSeconds: item.seconds),
-        ),
-      );
-    });
+    final isChain = bundle.items.length > 1;
+    final ListItem added = isChain
+        ? ChainModel(
+            name: bundle.name,
+            steps: [
+              for (final item in bundle.items)
+                ChainStep(
+                  title: item.title,
+                  seconds: item.seconds,
+                  startsNext: item.startsNext,
+                ),
+            ],
+          )
+        : TimerModel(
+            title: bundle.items.first.title,
+            remainingSeconds: bundle.items.first.seconds,
+          );
+    setState(() => items.add(added));
     _saveTimers();
 
-    final count = bundle.items.length;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Added $count ${count == 1 ? 'timer' : 'timers'} from ${bundle.name}',
+          isChain
+              ? 'Added ${bundle.name} (${bundle.items.length} steps)'
+              : 'Added 1 timer from ${bundle.name}',
         ),
       ),
     );
@@ -461,7 +477,19 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                           onReset: () => resetTimer(timer),
                           onEdit: () => _showTimerDialog(editing: timer),
                         ),
-                        ChainModel chain => ChainCard(chain: chain),
+                        ChainModel chain => ChainCard(
+                          chain: chain,
+                          onStart: () =>
+                              _changeChain(() => chain.start(_refresh)),
+                          onPause: () => _changeChain(chain.pause),
+                          onResetStep: () => _changeChain(chain.resetStep),
+                          onSkip: () =>
+                              _changeChain(() => chain.skip(_refresh)),
+                          onContinue: () => _changeChain(
+                            () => chain.continueToNext(_refresh),
+                          ),
+                          onRestart: () => _changeChain(chain.restartChain),
+                        ),
                         _ => const SizedBox.shrink(),
                       },
                     ),

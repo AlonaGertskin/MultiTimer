@@ -67,13 +67,13 @@ void main() {
 
   List<String> shownOrder(WidgetTester tester, List<String> names) {
     final found = names
-        .where((n) => find.text(n).evaluate().isNotEmpty)
+        .where((n) => find.textContaining(n).evaluate().isNotEmpty)
         .toList();
     found.sort(
       (a, b) => tester
-          .getTopLeft(find.text(a))
+          .getTopLeft(find.textContaining(a))
           .dy
-          .compareTo(tester.getTopLeft(find.text(b)).dy),
+          .compareTo(tester.getTopLeft(find.textContaining(b)).dy),
     );
     return found;
   }
@@ -129,8 +129,8 @@ void main() {
       saveItems([chain('Dinner').toMap()]);
       await openMain(tester);
 
-      expect(find.text('Dinner'), findsOneWidget);
-      expect(find.text('Pasta · step 1 of 2'), findsOneWidget);
+      expect(find.text('Dinner · step 1 of 2'), findsOneWidget);
+      expect(find.text('Pasta'), findsOneWidget);
       expect(find.text('00:01:00'), findsOneWidget);
     });
 
@@ -164,7 +164,8 @@ void main() {
       saveItems([dinner.toMap()]);
       await openMain(tester);
 
-      expect(find.text('Sauce · step 2 of 2'), findsOneWidget);
+      expect(find.text('Dinner · step 2 of 2'), findsOneWidget);
+      expect(find.text('Sauce'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -249,7 +250,7 @@ void main() {
       await tester.tap(find.byTooltip('Delete selected'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Dinner'), findsNothing);
+      expect(find.textContaining('Dinner ·'), findsNothing);
       expect(await savedNames(), ['Tea']);
 
       await tester.tap(find.text('Undo'));
@@ -269,12 +270,12 @@ void main() {
       saveItems([timer('Tea', 60).toMap(), chain('Dinner').toMap()]);
       await openMain(tester);
 
-      await tester.drag(find.text('Dinner'), const Offset(-300, 0));
+      await tester.drag(find.textContaining('Dinner'), const Offset(-300, 0));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
-      expect(find.text('Dinner'), findsNothing);
+      expect(find.textContaining('Dinner ·'), findsNothing);
       expect(find.text('Dinner deleted'), findsOneWidget);
 
       await tester.tap(find.text('Undo'));
@@ -299,7 +300,7 @@ void main() {
       saveItems([dinner.toMap()]);
       await openMain(tester);
 
-      await tester.drag(find.text('Dinner'), const Offset(-300, 0));
+      await tester.drag(find.textContaining('Dinner'), const Offset(-300, 0));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();

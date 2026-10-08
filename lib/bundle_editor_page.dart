@@ -243,7 +243,12 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: ReorderableListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + MediaQuery.paddingOf(context).bottom,
+        ),
         buildDefaultDragHandles: false,
         onReorderStart: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         onReorder: _reorderRows,
@@ -264,7 +269,8 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
                 ExcludeFocus(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Row(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         const Text('All steps:'),
                         const SizedBox(width: 8),

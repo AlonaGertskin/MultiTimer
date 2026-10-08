@@ -154,6 +154,17 @@ void main() {
   });
 
   group('All steps buttons', () {
+    testWidgets('fit on a narrow phone', (tester) async {
+      await openNewBundle(tester, ['Warm-up', 'Set']);
+
+      tester.view.physicalSize = const Size(360, 2400);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Automatic'), findsOneWidget);
+      expect(find.text('Manual'), findsOneWidget);
+    });
+
     testWidgets('Automatic turns every switch on', (tester) async {
       await openNewBundle(tester, ['Warm-up', 'Set', 'Cool-down']);
 

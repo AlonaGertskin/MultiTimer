@@ -6,6 +6,8 @@ import 'bundle_store.dart';
 import 'swipe_to_delete.dart';
 import 'time_format.dart';
 
+const _newBundleButtonSpace = 88.0;
+
 class BundlesPage extends StatefulWidget {
   const BundlesPage({super.key});
 
@@ -228,6 +230,11 @@ class _BundlesPageState extends State<BundlesPage> {
             )
           : SlidableAutoCloseBehavior(
               child: ReorderableListView.builder(
+                padding: EdgeInsets.only(
+                  bottom:
+                      MediaQuery.paddingOf(context).bottom +
+                      (_editMode ? 0 : _newBundleButtonSpace),
+                ),
                 buildDefaultDragHandles: false,
                 itemCount: _bundles.length,
                 onReorder: _reorderBundles,

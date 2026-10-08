@@ -16,6 +16,8 @@ import 'time_fields.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
+const _addButtonSpace = 88.0;
+
 class _RemovedItem {
   final ListItem item;
   final int index;
@@ -602,6 +604,11 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       appBar: _buildAppBar(),
       body: SlidableAutoCloseBehavior(
         child: ReorderableListView.builder(
+          padding: EdgeInsets.only(
+            bottom:
+                MediaQuery.paddingOf(context).bottom +
+                (_editMode ? 0 : _addButtonSpace),
+          ),
           buildDefaultDragHandles: false,
           itemCount: items.length,
           onReorder: _reorderTimers,

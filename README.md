@@ -10,7 +10,7 @@ MultiTimer runs several countdown timers at once. Save groups of timers as bundl
 - Chains: a bundle with two or more timers runs as one card, step by step. Each link between steps is automatic or waits for you to tap Continue.
 - Everything is saved, and the time stays correct after the app was closed.
 - Swipe to delete with Undo, an edit mode to select, reorder and delete several items, and a details screen to edit a running chain.
-- A purple light theme and a green-teal dark theme that follow the phone's setting. Card colours show whether a timer is ready, running or finished. The Nunito font and a stopwatch app icon.
+- A purple light theme and a green-teal dark theme that follow the phone's setting.
 
 ## System Components
 - Framework: Flutter.
@@ -48,15 +48,4 @@ To deploy the application in a development environment:
 ```Bash
     flutter run
 ```
-## Development Roadmap
 
-The project is currently in active development with the following professional milestones:
-
-    [x] Persistence Layer: Implementation of local storage for session recovery and state persistence across application lifecycles.
-    [x] Clock-Accurate Countdowns: Displayed time is calculated from each timer's end time, so it stays correct when the app is paused or in the background.
-    [x] Background Notification Services: Integration of system-level alerts for stage completion during background execution.
-    [x] Everyday Basics: Editing, reordering, swipe-to-delete with Undo, and an edit mode to select, reorder and delete several timers at once.
-    [x] Bundles: Saved groups of timers that are added to the list in one tap, and can be edited, reordered and deleted.
-    [x] Chain Cards: A bundle shown as one card that steps through its timers, automatically or with a manual continue between steps.
-    [x] Interface Polish: Light and dark themes, card colours by state, matching timer and chain cards with progress bars, messages for empty lists, bundle cards with a preview, and a compact bundle editor.
-    [x] Finishing Touches: App icon, matching swipe button colours and the Nunito font.

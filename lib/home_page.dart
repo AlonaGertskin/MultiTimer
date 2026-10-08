@@ -4,19 +4,22 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bundle_model.dart';
 import 'bundles_page.dart';
+import 'chain_card.dart';
+import 'chain_model.dart';
 import 'confirm_discard.dart';
+import 'list_item.dart';
 import 'notification_service.dart';
 import 'swipe_to_delete.dart';
 import 'time_fields.dart';
 import 'timer_card.dart';
 import 'timer_model.dart';
 
-class _RemovedTimer {
-  final TimerModel timer;
+class _RemovedItem {
+  final ListItem item;
   final int index;
   final DateTime? end;
 
-  const _RemovedTimer(this.timer, this.index, this.end);
+  const _RemovedItem(this.item, this.index, this.end);
 }
 
 class MyMainPage extends StatefulWidget {
@@ -27,7 +30,7 @@ class MyMainPage extends StatefulWidget {
 }
 
 class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
-  List<TimerModel> timers = [];
+  List<ListItem> items = [];
   bool _editMode = false;
   final Set<int> _selectedIds = {};
   final TextEditingController _titleController = TextEditingController();
@@ -44,8 +47,8 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     setState(() {
-      for (var timer in timers) {
-        if (timer.isRunning) timer.syncWithClock();
+      for (final item in items) {
+        if (item.isRunning) item.syncWithClock();
       }
     });
   }
@@ -56,17 +59,21 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     if (timersJson == null || !mounted) return;
 
     setState(() {
-      timers = TimerModel.listFromJson(timersJson);
+      items = ListItem.listFromJson(timersJson);
     });
 
-    for (var timer in timers) {
-      if (timer.isRunning) startTimer(timer);
+    for (final item in items) {
+      if (!item.isRunning) continue;
+      if (item is TimerModel) startTimer(item);
+      if (item is ChainModel) item.resume(item.endTime!, _refresh);
     }
   }
 
   Future<void> _saveTimers() async {
     final prefs = await SharedPreferences.getInstance();
-    final String encoded = jsonEncode(timers.map((t) => t.toMap()).toList());
+    final String encoded = jsonEncode(
+      items.map((item) => item.toMap()).toList(),
+    );
     await prefs.setString('saved_timers', encoded);
   }
 
@@ -98,57 +105,74 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
-  void _deleteWithUndo(List<TimerModel> toDelete) {
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  String _nameOf(ListItem item) => switch (item) {
+    ChainModel chain => chain.name,
+    TimerModel timer => timer.title,
+    _ => '',
+  };
+
+  void _stopItem(ListItem item) {
+    if (item is TimerModel) item.stop();
+    if (item is ChainModel) item.pause();
+  }
+
+  void _deleteWithUndo(List<ListItem> toDelete) {
     if (toDelete.isEmpty) return;
     final removed = [
-      for (final timer in toDelete)
-        _RemovedTimer(
-          timer,
-          timers.indexOf(timer),
-          timer.isRunning ? timer.endTime : null,
+      for (final item in toDelete)
+        _RemovedItem(
+          item,
+          items.indexOf(item),
+          item.isRunning ? item.endTime : null,
         ),
     ]..sort((a, b) => a.index.compareTo(b.index));
 
     setState(() {
-      for (final item in removed) {
-        item.timer.stop();
-        timers.remove(item.timer);
-        _selectedIds.remove(item.timer.id);
+      for (final entry in removed) {
+        _stopItem(entry.item);
+        items.remove(entry.item);
+        _selectedIds.remove(entry.item.id);
       }
     });
-    for (final item in removed) {
-      NotificationService.instance.cancel(item.timer.id);
+    for (final entry in removed) {
+      if (entry.item is TimerModel) {
+        NotificationService.instance.cancel(entry.item.id);
+      }
     }
     _saveTimers();
 
     showUndoSnackBar(
       context,
       removed.length == 1
-          ? '${removed.first.timer.title} deleted'
+          ? '${_nameOf(removed.first.item)} deleted'
           : '${removed.length} timers deleted',
-      () => _restoreTimers(removed),
+      () => _restoreItems(removed),
     );
   }
 
-  void _restoreTimers(List<_RemovedTimer> removed) {
+  void _restoreItems(List<_RemovedItem> removed) {
     if (!mounted) return;
     setState(() {
-      for (final item in removed) {
-        timers.insert(item.index.clamp(0, timers.length), item.timer);
-        final end = item.end;
-        if (end != null) {
-          item.timer.resume(end, () {
-            if (mounted) setState(() {});
-          });
-        }
+      for (final entry in removed) {
+        items.insert(entry.index.clamp(0, items.length), entry.item);
+        final end = entry.end;
+        final item = entry.item;
+        if (end == null) continue;
+        if (item is TimerModel) item.resume(end, _refresh);
+        if (item is ChainModel) item.resume(end, _refresh);
       }
     });
-    for (final item in removed) {
-      final end = item.end;
-      if (end != null) {
+    for (final entry in removed) {
+      final end = entry.end;
+      final item = entry.item;
+      if (end != null && item is TimerModel) {
         NotificationService.instance.schedule(
-          id: item.timer.id,
-          title: item.timer.title,
+          id: item.id,
+          title: item.title,
           when: end,
         );
       }
@@ -163,27 +187,27 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     });
   }
 
-  void _toggleSelected(TimerModel timer) {
+  void _toggleSelected(ListItem item) {
     setState(() {
-      if (!_selectedIds.remove(timer.id)) _selectedIds.add(timer.id);
+      if (!_selectedIds.remove(item.id)) _selectedIds.add(item.id);
     });
   }
 
   void _toggleSelectAll() {
     setState(() {
-      if (_selectedIds.length == timers.length) {
+      if (_selectedIds.length == items.length) {
         _selectedIds.clear();
       } else {
         _selectedIds
           ..clear()
-          ..addAll(timers.map((timer) => timer.id));
+          ..addAll(items.map((item) => item.id));
       }
     });
   }
 
   void _deleteSelected() {
     _deleteWithUndo(
-      timers.where((timer) => _selectedIds.contains(timer.id)).toList(),
+      items.where((item) => _selectedIds.contains(item.id)).toList(),
     );
   }
 
@@ -195,7 +219,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   void _reorderTimers(int oldIndex, int newIndex) {
     setState(() {
       if (newIndex > oldIndex) newIndex -= 1;
-      timers.insert(newIndex, timers.removeAt(oldIndex));
+      items.insert(newIndex, items.removeAt(oldIndex));
     });
     _saveTimers();
   }
@@ -226,7 +250,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     if (bundle == null || !mounted) return;
 
     setState(() {
-      timers.addAll(
+      items.addAll(
         bundle.items.map(
           (item) =>
               TimerModel(title: item.title, remainingSeconds: item.seconds),
@@ -324,7 +348,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                     final title = _titleController.text.trim();
                     if (editing == null) {
                       setState(() {
-                        timers.add(
+                        items.add(
                           TimerModel(
                             title: title,
                             remainingSeconds: totalSeconds,
@@ -376,7 +400,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
         IconButton(
           icon: const Icon(Icons.select_all),
           tooltip: 'Select all',
-          onPressed: timers.isEmpty ? null : _toggleSelectAll,
+          onPressed: items.isEmpty ? null : _toggleSelectAll,
         ),
         IconButton(
           icon: const Icon(Icons.delete_outline),
@@ -399,19 +423,19 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       body: SlidableAutoCloseBehavior(
         child: ReorderableListView.builder(
           buildDefaultDragHandles: false,
-          itemCount: timers.length,
+          itemCount: items.length,
           onReorder: _reorderTimers,
           itemBuilder: (context, index) {
-            final currentTimer = timers[index];
+            final item = items[index];
             return ReorderableDelayedDragStartListener(
-              key: ValueKey(currentTimer.id),
+              key: ValueKey(item.id),
               index: index,
               child: Slidable(
-                key: ValueKey('swipe-${currentTimer.id}'),
+                key: ValueKey('swipe-${item.id}'),
                 groupTag: 'timers',
                 enabled: !_editMode,
                 endActionPane: deleteActionPane(
-                  onDelete: () => _deleteWithUndo([currentTimer]),
+                  onDelete: () => _deleteWithUndo([item]),
                 ),
                 child: Row(
                   children: [
@@ -422,20 +446,24 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                           ? Padding(
                               padding: const EdgeInsets.only(left: 8),
                               child: Checkbox(
-                                value: _selectedIds.contains(currentTimer.id),
-                                onChanged: (_) => _toggleSelected(currentTimer),
+                                value: _selectedIds.contains(item.id),
+                                onChanged: (_) => _toggleSelected(item),
                               ),
                             )
                           : const SizedBox(width: 0),
                     ),
                     Expanded(
-                      child: TimerCard(
-                        timer: currentTimer,
-                        onStart: () => startTimer(currentTimer),
-                        onPause: () => pauseTimer(currentTimer),
-                        onReset: () => resetTimer(currentTimer),
-                        onEdit: () => _showTimerDialog(editing: currentTimer),
-                      ),
+                      child: switch (item) {
+                        TimerModel timer => TimerCard(
+                          timer: timer,
+                          onStart: () => startTimer(timer),
+                          onPause: () => pauseTimer(timer),
+                          onReset: () => resetTimer(timer),
+                          onEdit: () => _showTimerDialog(editing: timer),
+                        ),
+                        ChainModel chain => ChainCard(chain: chain),
+                        _ => const SizedBox.shrink(),
+                      },
                     ),
                     AnimatedSize(
                       duration: const Duration(milliseconds: 200),
@@ -469,8 +497,8 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    for (var timer in timers) {
-      timer.internalTimer?.cancel();
+    for (final item in items) {
+      item.internalTimer?.cancel();
     }
     _titleController.dispose();
     _timeController.dispose();

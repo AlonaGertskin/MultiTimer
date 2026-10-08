@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 import 'id_generator.dart';
+import 'list_item.dart';
 
-class TimerModel {
+class TimerModel implements ListItem {
+  @override
   final int id;
   String title;
   int remainingSeconds;
   int initialSeconds;
+  @override
   bool isRunning;
+  @override
   DateTime? endTime;
+  @override
   Timer? internalTimer;
   final DateTime Function() _now;
 
@@ -23,6 +28,7 @@ class TimerModel {
         initialSeconds = remainingSeconds,
         _now = now ?? DateTime.now;
 
+  @override
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -72,6 +78,7 @@ class TimerModel {
     return timers;
   }
 
+  @override
   void syncWithClock() {
     final end = endTime;
     if (end == null) return;

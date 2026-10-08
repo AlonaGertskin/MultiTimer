@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'id_generator.dart';
+import 'list_item.dart';
 
 class ChainStep {
   final int id;
@@ -37,14 +38,18 @@ class ChainStep {
   }
 }
 
-class ChainModel {
+class ChainModel implements ListItem {
+  @override
   final int id;
   String name;
   final List<ChainStep> steps;
   int currentIndex;
   int remainingSeconds;
+  @override
   bool isRunning;
+  @override
   DateTime? endTime;
+  @override
   Timer? internalTimer;
   final DateTime Function() _now;
 
@@ -72,6 +77,7 @@ class ChainModel {
 
   bool get isComplete => _isStepFinished && isLastStep;
 
+  @override
   void syncWithClock() {
     var end = endTime;
     if (end == null) return;
@@ -92,6 +98,18 @@ class ChainModel {
 
     isRunning = true;
     endTime = _now().add(Duration(seconds: remainingSeconds));
+    _startTicking(onTick);
+  }
+
+  void resume(DateTime end, Function onTick) {
+    _stop();
+    isRunning = true;
+    endTime = end;
+    syncWithClock();
+    _startTicking(onTick);
+  }
+
+  void _startTicking(Function onTick) {
     internalTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       syncWithClock();
       onTick();
@@ -148,6 +166,7 @@ class ChainModel {
     endTime = null;
   }
 
+  @override
   Map<String, dynamic> toMap() {
     return {
       'type': 'chain',

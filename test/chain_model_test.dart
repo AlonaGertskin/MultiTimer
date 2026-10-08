@@ -15,16 +15,16 @@ void main() {
 
   // A (60s, starts B by itself), B (120s, manual), C (30s, last)
   ChainModel newChain({List<ChainStep>? steps}) => ChainModel(
-        name: 'Dinner',
-        steps:
-            steps ??
-            [
-              ChainStep(title: 'A', seconds: 60, startsNext: true),
-              ChainStep(title: 'B', seconds: 120),
-              ChainStep(title: 'C', seconds: 30),
-            ],
-        now: () => fakeNow,
-      );
+    name: 'Dinner',
+    steps:
+        steps ??
+        [
+          ChainStep(title: 'A', seconds: 60, startsNext: true),
+          ChainStep(title: 'B', seconds: 120),
+          ChainStep(title: 'C', seconds: 30),
+        ],
+    now: () => fakeNow,
+  );
 
   group('Starting', () {
     test('a new chain waits ready on its first step', () {
@@ -274,6 +274,20 @@ void main() {
     });
   });
 
+  group('Resume', () {
+    test('carries on towards a given end time', () {
+      final chain = newChain();
+      final end = fakeNow.add(const Duration(seconds: 45));
+
+      chain.resume(end, () {});
+
+      expect(chain.isRunning, true);
+      expect(chain.endTime, end);
+      expect(chain.remainingSeconds, 45);
+      chain.pause();
+    });
+  });
+
   group('Restart whole chain', () {
     test('goes back to a ready first step', () {
       final chain = newChain();
@@ -357,7 +371,8 @@ void main() {
       final chain = newChain();
       chain.start(() {});
       pass(chain, 10);
-      final saved = jsonDecode(jsonEncode(chain.toMap())) as Map<String, dynamic>;
+      final saved =
+          jsonDecode(jsonEncode(chain.toMap())) as Map<String, dynamic>;
       chain.pause();
 
       fakeNow = fakeNow.add(const Duration(seconds: 100));

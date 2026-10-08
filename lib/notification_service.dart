@@ -7,6 +7,8 @@ class NotificationService {
   NotificationService();
   static NotificationService instance = NotificationService();
 
+  static const androidIcon = '@drawable/ic_stat_timer';
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
@@ -27,7 +29,7 @@ class NotificationService {
 
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings(androidIcon),
       ),
     );
 

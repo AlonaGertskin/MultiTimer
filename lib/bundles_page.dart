@@ -3,6 +3,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'bundle_editor_page.dart';
 import 'bundle_model.dart';
 import 'bundle_store.dart';
+import 'empty_list_message.dart';
 import 'swipe_to_delete.dart';
 import 'time_format.dart';
 
@@ -219,13 +220,11 @@ class _BundlesPageState extends State<BundlesPage> {
     return Scaffold(
       appBar: _buildAppBar(),
       body: _bundles.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text(
-                  'No bundles yet.\nTap New bundle to create one.',
-                  textAlign: TextAlign.center,
-                ),
+          ? const EmptyListMessage(
+              icon: Icons.inventory_2_outlined,
+              title: 'No bundles yet',
+              hint: TextSpan(
+                text: 'Save a group of timers you use often, like Dinner.',
               ),
             )
           : SlidableAutoCloseBehavior(

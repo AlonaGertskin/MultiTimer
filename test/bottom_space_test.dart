@@ -73,7 +73,7 @@ void main() {
       await scrollToEnd(tester);
 
       expect(
-        bottomOf(tester, find.byIcon(Icons.edit_outlined).last),
+        bottomOf(tester, find.byType(Card).last),
         lessThanOrEqualTo(topOfAddButton(tester)),
       );
     });
@@ -88,7 +88,7 @@ void main() {
       await scrollToEnd(tester);
 
       expect(
-        bottomOf(tester, find.byIcon(Icons.edit_outlined).last),
+        bottomOf(tester, find.byType(Card).last),
         lessThanOrEqualTo(screenHeight - navigationBar),
       );
     });

@@ -44,7 +44,12 @@ void main() {
   Future<void> useBundle(WidgetTester tester, String name) async {
     await tester.tap(find.byTooltip('Bundles'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(name));
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(of: find.text(name), matching: find.byType(Card)),
+        matching: find.text('Add'),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 

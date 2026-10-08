@@ -9,6 +9,7 @@ import 'bundles_page.dart';
 import 'chain_card.dart';
 import 'chain_model.dart';
 import 'confirm_discard.dart';
+import 'empty_list_message.dart';
 import 'list_item.dart';
 import 'notification_service.dart';
 import 'swipe_to_delete.dart';
@@ -602,97 +603,123 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: SlidableAutoCloseBehavior(
-        child: ReorderableListView.builder(
-          padding: EdgeInsets.only(
-            bottom:
-                MediaQuery.paddingOf(context).bottom +
-                (_editMode ? 0 : _addButtonSpace),
-          ),
-          buildDefaultDragHandles: false,
-          itemCount: items.length,
-          onReorder: _reorderTimers,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            return ReorderableDelayedDragStartListener(
-              key: ValueKey(item.id),
-              index: index,
-              child: Slidable(
-                key: ValueKey('swipe-${item.id}'),
-                groupTag: 'timers',
-                enabled: !_editMode,
-                startActionPane: item is ChainModel
-                    ? restartActionPane(onRestart: () => _restartWithUndo(item))
-                    : null,
-                endActionPane: deleteActionPane(
-                  onDelete: () => item is ChainModel
-                      ? _confirmDeleteChain(item)
-                      : _deleteWithUndo([item]),
-                ),
-                child: Row(
-                  children: [
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 200),
-                      alignment: Alignment.centerLeft,
-                      child: _editMode
-                          ? Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Checkbox(
-                                value: _selectedIds.contains(item.id),
-                                onChanged: (_) => _toggleSelected(item),
-                              ),
-                            )
-                          : const SizedBox(width: 0),
-                    ),
-                    Expanded(
-                      child: switch (item) {
-                        TimerModel timer => TimerCard(
-                          timer: timer,
-                          onStart: () => startTimer(timer),
-                          onPause: () => pauseTimer(timer),
-                          onReset: () => resetTimer(timer),
-                          onEdit: () => _showTimerDialog(editing: timer),
-                        ),
-                        ChainModel chain => ChainCard(
-                          chain: chain,
-                          onStart: () =>
-                              _changeChain(chain, () => chain.start(_refresh)),
-                          onPause: () => _changeChain(chain, chain.pause),
-                          onResetStep: () =>
-                              _changeChain(chain, chain.resetStep),
-                          onSkip: () =>
-                              _changeChain(chain, () => chain.skip(_refresh)),
-                          onContinue: () => _changeChain(
-                            chain,
-                            () => chain.continueToNext(_refresh),
-                          ),
-                          onRestart: () =>
-                              _changeChain(chain, chain.restartChain),
-                          onDetails: () => _openChainDetails(chain),
-                        ),
-                        _ => const SizedBox.shrink(),
-                      },
-                    ),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 200),
-                      alignment: Alignment.centerRight,
-                      child: _editMode
-                          ? ReorderableDragStartListener(
-                              index: index,
-                              child: const Padding(
-                                padding: EdgeInsets.fromLTRB(0, 16, 12, 16),
-                                child: Icon(Icons.drag_handle),
-                              ),
-                            )
-                          : const SizedBox(width: 0),
-                    ),
-                  ],
-                ),
+      body: items.isEmpty
+          ? const EmptyListMessage(
+              icon: Icons.timer_outlined,
+              title: 'No timers yet',
+              hint: TextSpan(
+                children: [
+                  TextSpan(text: 'Tap + to add a timer, or '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Icon(Icons.inventory_2_outlined, size: 18),
+                  ),
+                  TextSpan(text: ' to use a saved bundle.'),
+                ],
               ),
-            );
-          },
-        ),
-      ),
+            )
+          : SlidableAutoCloseBehavior(
+              child: ReorderableListView.builder(
+                padding: EdgeInsets.only(
+                  bottom:
+                      MediaQuery.paddingOf(context).bottom +
+                      (_editMode ? 0 : _addButtonSpace),
+                ),
+                buildDefaultDragHandles: false,
+                itemCount: items.length,
+                onReorder: _reorderTimers,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return ReorderableDelayedDragStartListener(
+                    key: ValueKey(item.id),
+                    index: index,
+                    child: Slidable(
+                      key: ValueKey('swipe-${item.id}'),
+                      groupTag: 'timers',
+                      enabled: !_editMode,
+                      startActionPane: item is ChainModel
+                          ? restartActionPane(
+                              onRestart: () => _restartWithUndo(item),
+                            )
+                          : null,
+                      endActionPane: deleteActionPane(
+                        onDelete: () => item is ChainModel
+                            ? _confirmDeleteChain(item)
+                            : _deleteWithUndo([item]),
+                      ),
+                      child: Row(
+                        children: [
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 200),
+                            alignment: Alignment.centerLeft,
+                            child: _editMode
+                                ? Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: Checkbox(
+                                      value: _selectedIds.contains(item.id),
+                                      onChanged: (_) => _toggleSelected(item),
+                                    ),
+                                  )
+                                : const SizedBox(width: 0),
+                          ),
+                          Expanded(
+                            child: switch (item) {
+                              TimerModel timer => TimerCard(
+                                timer: timer,
+                                onStart: () => startTimer(timer),
+                                onPause: () => pauseTimer(timer),
+                                onReset: () => resetTimer(timer),
+                                onEdit: () => _showTimerDialog(editing: timer),
+                              ),
+                              ChainModel chain => ChainCard(
+                                chain: chain,
+                                onStart: () => _changeChain(
+                                  chain,
+                                  () => chain.start(_refresh),
+                                ),
+                                onPause: () => _changeChain(chain, chain.pause),
+                                onResetStep: () =>
+                                    _changeChain(chain, chain.resetStep),
+                                onSkip: () => _changeChain(
+                                  chain,
+                                  () => chain.skip(_refresh),
+                                ),
+                                onContinue: () => _changeChain(
+                                  chain,
+                                  () => chain.continueToNext(_refresh),
+                                ),
+                                onRestart: () =>
+                                    _changeChain(chain, chain.restartChain),
+                                onDetails: () => _openChainDetails(chain),
+                              ),
+                              _ => const SizedBox.shrink(),
+                            },
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 200),
+                            alignment: Alignment.centerRight,
+                            child: _editMode
+                                ? ReorderableDragStartListener(
+                                    index: index,
+                                    child: const Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        0,
+                                        16,
+                                        12,
+                                        16,
+                                      ),
+                                      child: Icon(Icons.drag_handle),
+                                    ),
+                                  )
+                                : const SizedBox(width: 0),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
       floatingActionButton: _editMode
           ? null
           : FloatingActionButton(

@@ -120,7 +120,7 @@ void main() {
       await tester.tap(switches.at(1));
       await tester.pump();
 
-      await dragHandle(tester, 0, 260);
+      await dragHandle(tester, 0, 170);
 
       expect(switchValues(tester), [true, false]);
       expect(await saveAndRead(tester), [true, false, false]);

@@ -28,6 +28,8 @@ class TimerModel implements ListItem {
         initialSeconds = remainingSeconds,
         _now = now ?? DateTime.now;
 
+  bool get isFinished => remainingSeconds <= 0;
+
   @override
   Map<String, dynamic> toMap() {
     return {

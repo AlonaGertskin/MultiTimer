@@ -58,11 +58,13 @@ class TimeFieldsController {
 class TimeFields extends StatelessWidget {
   final TimeFieldsController controller;
   final TextInputAction lastAction;
+  final bool compact;
 
   const TimeFields({
     super.key,
     required this.controller,
     this.lastAction = TextInputAction.done,
+    this.compact = false,
   });
 
   Widget _field(
@@ -77,7 +79,12 @@ class TimeFields extends StatelessWidget {
       child: TextField(
         controller: textController,
         focusNode: focusNode,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+          labelText: label,
+          isDense: compact,
+          floatingLabelBehavior:
+              compact ? FloatingLabelBehavior.always : null,
+        ),
         keyboardType: TextInputType.number,
         textInputAction: isLast ? lastAction : TextInputAction.next,
         inputFormatters: [

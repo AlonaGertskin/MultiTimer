@@ -1,14 +1,16 @@
 # MultiTimer
 
-A reactive, multi-stage state machine for complex asynchronous workflow management.
+MultiTimer runs several countdown timers at once. Save groups of timers as bundles and run them as chains, one step after another, automatically or with a tap to continue.
 
-MultiTimer is a cross-platform application built with Flutter designed to orchestrate and track multi-step processes that require precise timing and sequential execution. The application provides a robust interface for managing overlapping or dependent timed tasks, ensuring high visibility into the status of long-running workflows.
 ## Key Features
 
-- Reactive State Management: Implements a dedicated timer model to manage real-time updates and concurrent countdowns across the application.
-- Sequential Stage Orchestration: Built to guide users through defined phases of a process, providing clear feedback on current progress and upcoming steps.
-- Dynamic Temporal Formatting: Includes custom logic for converting raw durations into standardized, human-readable temporal formats.
-- Decoupled Architecture: Follows a modular design pattern, separating core timing logic from the presentation layer to ensure scalability and maintainability.
+- Several timers side by side, each with its own progress bar. A finished timer keeps counting into negative time, so you can see how late it is.
+- Alerts when a timer or a chain step finishes, also with the screen locked or the app closed.
+- Bundles: saved groups of timers, such as "Dinner" or a workout, added in one tap.
+- Chains: a bundle with two or more timers runs as one card, step by step. Each link between steps is automatic or waits for you to tap Continue.
+- Everything is saved, and the time stays correct after the app was closed.
+- Swipe to delete with Undo, an edit mode to select, reorder and delete several items, and a details screen to edit a running chain.
+- A purple light theme and a green-teal dark theme that follow the phone's setting. Card colours show whether a timer is ready, running or finished.
 
 ## System Components
 - Framework: Flutter.
@@ -25,6 +27,9 @@ MultiTimer is a cross-platform application built with Flutter designed to orches
 - lib/list_item.dart: An entry in the main list, either a single timer or a chain.
 - lib/bundles_page.dart and lib/bundle_editor_page.dart: Saved bundles (named groups of timers): list, create, edit, reorder, delete and add to the timer list. A bundle with two or more timers is added as one chain. The editor also shows and edits a chain's steps.
 - lib/bundle_model.dart and lib/bundle_store.dart: The bundle data and its local storage.
+- lib/app_colors.dart: The light and dark colours, and the card colours for ready, running and finished.
+- lib/card_parts.dart: The time style shared by timer and chain cards.
+- lib/empty_list_message.dart: The message shown when there are no timers or no bundles yet.
 - lib/main.dart: The application entry point, handling global configuration and theme initialization.
 
 ## Setup and Deployment
@@ -53,4 +58,5 @@ The project is currently in active development with the following professional m
     [x] Everyday Basics: Editing, reordering, swipe-to-delete with Undo, and an edit mode to select, reorder and delete several timers at once.
     [x] Bundles: Saved groups of timers that are added to the list in one tap, and can be edited, reordered and deleted.
     [x] Chain Cards: A bundle shown as one card that steps through its timers, automatically or with a manual continue between steps.
-    [ ] Interface Polish.
+    [x] Interface Polish: Light and dark themes, card colours by state, matching timer and chain cards with progress bars, messages for empty lists, bundle cards with a preview, and a compact bundle editor.
+    [ ] App icon, matching swipe button colours and a nicer font.

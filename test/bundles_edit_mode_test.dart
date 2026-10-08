@@ -176,12 +176,12 @@ void main() {
       expect(tester.getTopLeft(find.text('A')), before);
     });
 
-    testWidgets('outside edit mode, tapping a bundle still adds it', (
+    testWidgets('outside edit mode, the Add button still adds a bundle', (
       tester,
     ) async {
       await openBundles(tester, ['A']);
 
-      await tester.tap(find.text('A'));
+      await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
       expect(find.byType(BundlesPage), findsNothing);

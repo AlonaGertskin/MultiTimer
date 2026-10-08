@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 import 'bundle_model.dart';
 import 'bundle_store.dart';
 import 'chain_model.dart';
@@ -319,86 +320,126 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
           final position = _positionAtOpen(row);
           final isCurrent = position == _currentIndexAtOpen;
           final isDone = position != null && position < _currentIndexAtOpen;
+          final colors = Theme.of(context).colorScheme;
           return ReorderableDelayedDragStartListener(
             key: ObjectKey(row),
             index: index,
-            child: Card(
-              color: isCurrent
-                  ? Theme.of(context).colorScheme.secondaryContainer
-                  : null,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 8, 8, 16),
-                child: Row(
-                  children: [
-                    ReorderableDragStartListener(
-                      index: index,
-                      child: const Padding(
-                        padding: EdgeInsets.fromLTRB(12, 16, 12, 16),
-                        child: Icon(Icons.drag_handle),
-                      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Card(
+                  color: isCurrent ? runningCardColor(colors) : null,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                    child: Row(
+                      children: [
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: const Padding(
+                            padding: EdgeInsets.fromLTRB(12, 16, 8, 16),
+                            child: Icon(Icons.drag_handle),
+                          ),
+                        ),
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: colors.primary,
+                          foregroundColor: colors.onPrimary,
+                          child: Text(
+                            '${index + 1}',
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(color: colors.onPrimary),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (isCurrent || isDone)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isCurrent
+                                            ? Icons.play_arrow
+                                            : Icons.check,
+                                        size: 16,
+                                        color: isDone
+                                            ? colors.onSurfaceVariant
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        isCurrent ? 'Now' : 'Done',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium
+                                            ?.copyWith(
+                                              color: isDone
+                                                  ? colors.onSurfaceVariant
+                                                  : null,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              TextField(
+                                controller: row.title,
+                                decoration: const InputDecoration(
+                                  labelText: 'Timer name',
+                                  isDense: true,
+                                ),
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                textInputAction: TextInputAction.next,
+                              ),
+                              const SizedBox(height: 4),
+                              TimeFields(
+                                controller: row.time,
+                                compact: true,
+                                lastAction: row == _rows.last
+                                    ? TextInputAction.done
+                                    : TextInputAction.next,
+                              ),
+                            ],
+                          ),
+                        ),
+                        ExcludeFocus(
+                          child: IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Remove timer',
+                            onPressed: () => _removeRow(row),
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                ),
+                if (row != _rows.last)
+                  ExcludeFocus(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 4, 0),
+                      child: Row(
                         children: [
-                          if (isCurrent || isDone)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isCurrent ? Icons.play_arrow : Icons.check,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    isCurrent ? 'Now' : 'Done',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          TextField(
-                            controller: row.title,
-                            decoration: const InputDecoration(
-                              labelText: 'Timer name',
-                            ),
-                            textCapitalization: TextCapitalization.sentences,
-                            textInputAction: TextInputAction.next,
+                          Icon(
+                            row.startsNext ? Icons.arrow_downward : Icons.pause,
+                            size: 20,
                           ),
-                          const SizedBox(height: 8),
-                          TimeFields(
-                            controller: row.time,
-                            lastAction: row == _rows.last
-                                ? TextInputAction.done
-                                : TextInputAction.next,
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text('Start next automatically'),
                           ),
-                          if (row != _rows.last)
-                            ExcludeFocus(
-                              child: SwitchListTile(
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                                title: const Text('Start next automatically'),
-                                value: row.startsNext,
-                                onChanged: (value) =>
-                                    setState(() => row.startsNext = value),
-                              ),
-                            ),
+                          Switch(
+                            value: row.startsNext,
+                            onChanged: (value) =>
+                                setState(() => row.startsNext = value),
+                          ),
                         ],
                       ),
                     ),
-                    ExcludeFocus(
-                      child: IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: 'Remove timer',
-                        onPressed: () => _removeRow(row),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
             ),
           );
         },

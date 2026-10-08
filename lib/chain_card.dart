@@ -205,7 +205,7 @@ class ChainProgressStrip extends StatelessWidget {
               ),
             ),
             if (i < chain.steps.length - 1 && !chain.steps[i].startsNext)
-              const SizedBox(key: ValueKey('manual-gap'), width: 6),
+              SizedBox(key: ValueKey('manual-gap-$i'), width: 6),
           ],
         ],
       ),

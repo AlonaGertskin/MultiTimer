@@ -14,6 +14,7 @@ class FakeNotificationService extends NotificationService {
     required int id,
     required String title,
     required DateTime when,
+    String body = 'Time is up',
   }) async {}
 
   @override
@@ -250,7 +251,11 @@ void main() {
     int gaps() => find
         .descendant(
           of: strip,
-          matching: find.byKey(const ValueKey('manual-gap')),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key as ValueKey<String>).value.startsWith('manual-gap'),
+          ),
         )
         .evaluate()
         .length;
@@ -292,6 +297,24 @@ void main() {
       await openWith(tester, dinner());
 
       expect(gaps(), 1);
+    });
+
+    testWidgets('an all-manual chain shows a gap after every step but the '
+        'last', (tester) async {
+      await openWith(
+        tester,
+        ChainModel(
+          name: 'Dinner',
+          steps: [
+            ChainStep(title: 'Pasta', seconds: 600),
+            ChainStep(title: 'Sauce', seconds: 900),
+            ChainStep(title: 'Bread', seconds: 1200),
+          ],
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(gaps(), 2);
     });
 
     testWidgets('longer steps get longer pieces', (tester) async {

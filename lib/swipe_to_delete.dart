@@ -61,6 +61,7 @@ void showUndoSnackBar(
     SnackBar(
       content: Text(message),
       action: SnackBarAction(label: 'Undo', onPressed: onUndo),
+      persist: false,
     ),
   );
 }

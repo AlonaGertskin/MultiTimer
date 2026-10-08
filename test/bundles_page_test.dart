@@ -287,6 +287,9 @@ void main() {
     });
 
     testWidgets('timers can be added and removed', (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await openEditor(tester);
       expect(field('Timer name'), findsOneWidget);
 

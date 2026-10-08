@@ -6,7 +6,7 @@ import 'time_fields.dart';
 class _ItemRow {
   final TextEditingController title = TextEditingController();
   final TimeFieldsController time = TimeFieldsController();
-  final bool startsNext;
+  bool startsNext;
 
   _ItemRow({String title = '', int seconds = 0, this.startsNext = false}) {
     this.title.text = title;
@@ -62,7 +62,8 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
       final row = _rows[i];
       final item = original.items[i];
       if (row.title.text.trim() != item.title ||
-          row.time.totalSeconds != item.seconds) {
+          row.time.totalSeconds != item.seconds ||
+          row.startsNext != item.startsNext) {
         return true;
       }
     }
@@ -80,6 +81,14 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
     if (_hasChanges && !await confirmDiscard(context)) return;
     if (!mounted) return;
     Navigator.pop(context);
+  }
+
+  void _setAllLinks(bool startsNext) {
+    setState(() {
+      for (final row in _rows) {
+        row.startsNext = startsNext;
+      }
+    });
   }
 
   void _reorderRows(int oldIndex, int newIndex) {
@@ -158,11 +167,36 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
         onReorder: _reorderRows,
         header: Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Bundle name'),
-            textCapitalization: TextCapitalization.sentences,
-            textInputAction: TextInputAction.next,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Bundle name'),
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
+              ),
+              if (_rows.length > 1)
+                ExcludeFocus(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        const Text('All steps:'),
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () => _setAllLinks(true),
+                          child: const Text('Automatic'),
+                        ),
+                        TextButton(
+                          onPressed: () => _setAllLinks(false),
+                          child: const Text('Manual'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         footer: Column(
@@ -219,6 +253,17 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
                                 ? TextInputAction.done
                                 : TextInputAction.next,
                           ),
+                          if (row != _rows.last)
+                            ExcludeFocus(
+                              child: SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                title: const Text('Start next automatically'),
+                                value: row.startsNext,
+                                onChanged: (value) =>
+                                    setState(() => row.startsNext = value),
+                              ),
+                            ),
                         ],
                       ),
                     ),

@@ -22,12 +22,18 @@ class TimerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final finished = timer.isFinished;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: finished ? colors.secondaryContainer : null,
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.timer_outlined),
+            leading: Icon(
+              finished ? Icons.check_circle_outline : Icons.timer_outlined,
+            ),
             title: Text(timer.title),
             trailing: Text(
               formatTime(timer.remainingSeconds),

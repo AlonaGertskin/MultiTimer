@@ -172,6 +172,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.delete_outline));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
     expect(fake.scheduled, isEmpty);
 
     await tester.tap(find.text('Undo'));

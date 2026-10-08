@@ -275,6 +275,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
 
       expect(find.textContaining('Dinner ·'), findsNothing);
       expect(find.text('Dinner deleted'), findsOneWidget);
@@ -304,6 +306,8 @@ void main() {
       await tester.drag(find.textContaining('Dinner'), const Offset(-300, 0));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();

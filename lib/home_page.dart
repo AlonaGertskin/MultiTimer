@@ -136,6 +136,29 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
+  Future<void> _confirmDeleteChain(ChainModel chain) async {
+    final delete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${chain.name}?'),
+        content: Text(
+          'This removes the whole chain (${chain.steps.length} steps).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (delete == true && mounted) _deleteWithUndo([chain]);
+  }
+
   String _nameOf(ListItem item) => switch (item) {
     ChainModel chain => chain.name,
     TimerModel timer => timer.title,
@@ -478,7 +501,9 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                 groupTag: 'timers',
                 enabled: !_editMode,
                 endActionPane: deleteActionPane(
-                  onDelete: () => _deleteWithUndo([item]),
+                  onDelete: () => item is ChainModel
+                      ? _confirmDeleteChain(item)
+                      : _deleteWithUndo([item]),
                 ),
                 child: Row(
                   children: [

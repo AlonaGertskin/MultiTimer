@@ -27,7 +27,7 @@ void main() {
 
   tearDown(() => NotificationService.instance = NotificationService());
 
-  Future<void> openWith(WidgetTester tester, ColorScheme colors) async {
+  Future<void> openWith(WidgetTester tester, ThemeData theme) async {
     SharedPreferences.setMockInitialValues({
       'saved_timers': jsonEncode([
         TimerModel(title: 'Tea', remainingSeconds: 60).toMap(),
@@ -45,7 +45,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(colorScheme: colors),
+        theme: theme,
         home: const MyMainPage(),
       ),
     );
@@ -64,9 +64,12 @@ void main() {
   Color? iconColour(WidgetTester tester, IconData icon) =>
       tester.widget<Icon>(find.byIcon(icon)).color;
 
-  for (final (name, colors) in [('light', lightColors), ('dark', darkColors)]) {
+  for (final (name, colors, theme) in [
+    ('light', lightColors, lightTheme),
+    ('dark', darkColors, darkTheme),
+  ]) {
     testWidgets('$name: delete uses the theme\'s soft red', (tester) async {
-      await openWith(tester, colors);
+      await openWith(tester, theme);
 
       await tester.drag(find.text('Tea'), const Offset(-300, 0));
       await tester.pumpAndSettle();
@@ -79,7 +82,7 @@ void main() {
     });
 
     testWidgets('$name: restart uses the theme\'s main colour', (tester) async {
-      await openWith(tester, colors);
+      await openWith(tester, theme);
 
       await tester.drag(
         find.text('Dinner · step 1 of 2'),

@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -12,13 +14,14 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const NotificationDetails _details = NotificationDetails(
+  static const NotificationDetails details = NotificationDetails(
     android: AndroidNotificationDetails(
       'timer_done',
       'Timer finished',
       channelDescription: 'Alerts when a timer reaches zero',
       importance: Importance.max,
       priority: Priority.high,
+      color: Color(0xFF65558F),
     ),
   );
 
@@ -51,7 +54,7 @@ class NotificationService {
       title: title,
       body: body,
       scheduledDate: tz.TZDateTime.from(when, tz.local),
-      notificationDetails: _details,
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }

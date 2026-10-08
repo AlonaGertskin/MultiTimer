@@ -136,6 +136,31 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     _saveTimers();
   }
 
+  void _restartWithUndo(ChainModel chain) {
+    final before = chain.toMap();
+    _changeChain(chain, chain.restartChain);
+    showUndoSnackBar(
+      context,
+      '${chain.name} restarted',
+      () => _putChainBack(chain, before),
+    );
+  }
+
+  void _putChainBack(ChainModel chain, Map<String, dynamic> before) {
+    if (!mounted) return;
+    final index = items.indexOf(chain);
+    if (index < 0) return;
+    final restored = ChainModel.fromMap(before);
+    setState(() {
+      chain.pause();
+      items[index] = restored;
+      final end = restored.endTime;
+      if (restored.isRunning && end != null) restored.resume(end, _refresh);
+    });
+    _scheduleChainAlerts(restored, alsoCancel: chain.steps.map((s) => s.id));
+    _saveTimers();
+  }
+
   Future<void> _confirmDeleteChain(ChainModel chain) async {
     final delete = await showDialog<bool>(
       context: context,
@@ -500,6 +525,9 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                 key: ValueKey('swipe-${item.id}'),
                 groupTag: 'timers',
                 enabled: !_editMode,
+                startActionPane: item is ChainModel
+                    ? restartActionPane(onRestart: () => _restartWithUndo(item))
+                    : null,
                 endActionPane: deleteActionPane(
                   onDelete: () => item is ChainModel
                       ? _confirmDeleteChain(item)

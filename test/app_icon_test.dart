@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multitimer/notification_service.dart';
 
@@ -43,10 +44,15 @@ void main() {
 
   test('notifications use the white stopwatch icon', () {
     expect(NotificationService.androidIcon, '@drawable/ic_stat_timer');
-    expect(
-      read('$res/drawable/ic_stat_timer.xml'),
-      contains('android:fillColor="#FFFFFFFF"'),
-    );
+    final colours = RegExp(
+      r'android:(?:fill|stroke)Color="([^"]+)"',
+    ).allMatches(read('$res/drawable/ic_stat_timer.xml'));
+    expect(colours, isNotEmpty);
+    expect(colours.map((m) => m.group(1)).toSet(), {'#FFFFFFFF'});
+  });
+
+  test('notifications are tinted with the launcher icon purple', () {
+    expect(NotificationService.details.android?.color, const Color(0xFF65558F));
   });
 
   test('the notification icon is kept in release builds', () {

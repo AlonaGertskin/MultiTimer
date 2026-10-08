@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bundle_editor_page.dart';
 import 'bundle_model.dart';
 import 'bundles_page.dart';
 import 'chain_card.dart';
@@ -158,6 +159,46 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       if (restored.isRunning && end != null) restored.resume(end, _refresh);
     });
     _scheduleChainAlerts(restored, alsoCancel: chain.steps.map((s) => s.id));
+    _saveTimers();
+  }
+
+  Future<void> _openChainDetails(ChainModel chain) async {
+    final edit = await Navigator.push<ChainEdit>(
+      context,
+      MaterialPageRoute(builder: (context) => BundleEditorPage(chain: chain)),
+    );
+    if (edit == null || !mounted) return;
+    final index = items.indexOf(chain);
+    if (index < 0) return;
+    final stepIdsBefore = chain.steps.map((step) => step.id).toList();
+
+    setState(() => chain.applyEdit(edit.name, edit.steps));
+    if (chain.steps.length > 1) {
+      _scheduleChainAlerts(chain, alsoCancel: stepIdsBefore);
+      _saveTimers();
+      return;
+    }
+
+    for (final id in stepIdsBefore) {
+      NotificationService.instance.cancel(id);
+    }
+    final timer = TimerModel(
+      title: chain.currentStep.title,
+      remainingSeconds: chain.remainingSeconds,
+    )..initialSeconds = chain.currentStep.seconds;
+    final end = chain.endTime;
+    setState(() {
+      chain.pause();
+      items[index] = timer;
+    });
+    if (end != null) {
+      timer.resume(end, _refresh);
+      NotificationService.instance.schedule(
+        id: timer.id,
+        title: timer.title,
+        when: end,
+      );
+    }
     _saveTimers();
   }
 
@@ -572,6 +613,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                           ),
                           onRestart: () =>
                               _changeChain(chain, chain.restartChain),
+                          onDetails: () => _openChainDetails(chain),
                         ),
                         _ => const SizedBox.shrink(),
                       },

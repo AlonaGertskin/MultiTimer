@@ -196,6 +196,27 @@ class ChainModel implements ListItem {
     return true;
   }
 
+  void applyEdit(String newName, List<ChainStep> newSteps) {
+    final current = currentStep;
+    final newIndex = newSteps.indexWhere((step) => step.id == current.id);
+    name = newName;
+    steps
+      ..clear()
+      ..addAll(newSteps);
+
+    if (newIndex < 0) {
+      _stop();
+      currentIndex = currentIndex.clamp(0, steps.length - 1);
+      remainingSeconds = currentStep.seconds;
+      return;
+    }
+    currentIndex = newIndex;
+    if (currentStep.seconds != current.seconds) {
+      _stop();
+      remainingSeconds = currentStep.seconds;
+    }
+  }
+
   void _moveToNextStep() {
     _stop();
     currentIndex++;

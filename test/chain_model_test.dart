@@ -347,6 +347,130 @@ void main() {
     });
   });
 
+  group('Applying an edit', () {
+    ChainStep copy(ChainStep step, {String? title, int? seconds}) => ChainStep(
+      id: step.id,
+      title: title ?? step.title,
+      seconds: seconds ?? step.seconds,
+      startsNext: step.startsNext,
+    );
+
+    ChainModel runningAtB() {
+      final chain = newChain();
+      chain.skip(() {});
+      expect(chain.currentStep.title, 'B');
+      expect(chain.isRunning, true);
+      return chain;
+    }
+
+    test('renaming the chain and the running step keeps it running', () {
+      final chain = runningAtB();
+      final end = chain.endTime;
+      final [a, b, c] = chain.steps;
+
+      chain.applyEdit('Supper', [a, copy(b, title: 'Gravy'), c]);
+
+      expect(chain.name, 'Supper');
+      expect(chain.currentIndex, 1);
+      expect(chain.currentStep.title, 'Gravy');
+      expect(chain.isRunning, true);
+      expect(chain.endTime, end);
+      chain.pause();
+    });
+
+    test('moving the running step keeps it current in its new place', () {
+      final chain = runningAtB();
+      final end = chain.endTime;
+      final [a, b, c] = chain.steps;
+
+      chain.applyEdit('Dinner', [b, c, a]);
+
+      expect(chain.currentIndex, 0);
+      expect(chain.currentStep.title, 'B');
+      expect(chain.isRunning, true);
+      expect(chain.endTime, end);
+      chain.pause();
+    });
+
+    test('a step removed before the running one keeps it running', () {
+      final chain = runningAtB();
+      final [_, b, c] = chain.steps;
+
+      chain.applyEdit('Dinner', [b, c]);
+
+      expect(chain.currentIndex, 0);
+      expect(chain.currentStep.title, 'B');
+      expect(chain.isRunning, true);
+      chain.pause();
+    });
+
+    test('a new step added keeps the running one going', () {
+      final chain = runningAtB();
+      final [a, b, c] = chain.steps;
+
+      chain.applyEdit('Dinner', [a, b, ChainStep(title: 'D', seconds: 45), c]);
+
+      expect(chain.steps.map((s) => s.title), ['A', 'B', 'D', 'C']);
+      expect(chain.currentIndex, 1);
+      expect(chain.isRunning, true);
+      chain.pause();
+    });
+
+    test('changing the running step time stops it at the new time', () {
+      final chain = runningAtB();
+      pass(chain, 30);
+      final [a, b, c] = chain.steps;
+
+      chain.applyEdit('Dinner', [a, copy(b, seconds: 300), c]);
+
+      expect(chain.currentIndex, 1);
+      expect(chain.isRunning, false);
+      expect(chain.endTime, isNull);
+      expect(chain.remainingSeconds, 300);
+    });
+
+    test('removing the running step makes the one in its place ready', () {
+      final chain = runningAtB();
+      final [a, _, c] = chain.steps;
+
+      chain.applyEdit('Dinner', [a, c]);
+
+      expect(chain.currentIndex, 1);
+      expect(chain.currentStep.title, 'C');
+      expect(chain.isRunning, false);
+      expect(chain.remainingSeconds, 30);
+    });
+
+    test('removing the running last step makes the new last one ready', () {
+      final chain = newChain();
+      chain.skip(() {});
+      chain.pause();
+      chain.skip(() {});
+      chain.start(() {});
+      expect(chain.currentStep.title, 'C');
+      final [a, b, _] = chain.steps;
+
+      chain.applyEdit('Dinner', [a, b]);
+
+      expect(chain.currentIndex, 1);
+      expect(chain.currentStep.title, 'B');
+      expect(chain.isRunning, false);
+      expect(chain.remainingSeconds, 120);
+    });
+
+    test('a paused step keeps its time when only renamed', () {
+      final chain = runningAtB();
+      pass(chain, 30);
+      chain.pause();
+      final [a, b, c] = chain.steps;
+
+      chain.applyEdit('Dinner', [a, copy(b, title: 'Gravy'), c]);
+
+      expect(chain.isRunning, false);
+      expect(chain.remainingSeconds, 90);
+    });
+  });
+
   group('Resume', () {
     test('carries on towards a given end time', () {
       final chain = newChain();

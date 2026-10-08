@@ -11,6 +11,7 @@ class ChainCard extends StatelessWidget {
   final VoidCallback onSkip;
   final VoidCallback onContinue;
   final VoidCallback onRestart;
+  final VoidCallback onDetails;
 
   const ChainCard({
     super.key,
@@ -21,6 +22,7 @@ class ChainCard extends StatelessWidget {
     required this.onSkip,
     required this.onContinue,
     required this.onRestart,
+    required this.onDetails,
   });
 
   static const _timeStyle = TextStyle(
@@ -55,11 +57,23 @@ class ChainCard extends StatelessWidget {
       children: [
         const Icon(Icons.link, size: 18),
         const SizedBox(width: 8),
-        Text(
-          '${chain.name} · step ${chain.currentIndex + 1} of ${chain.steps.length}',
-          style: Theme.of(context).textTheme.bodySmall,
+        Expanded(
+          child: Text(
+            '${chain.name} · step ${chain.currentIndex + 1} of ${chain.steps.length}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ),
+        _detailsButton(),
       ],
+    );
+  }
+
+  Widget _detailsButton() {
+    return IconButton(
+      icon: const Icon(Icons.more_horiz),
+      tooltip: 'Chain details',
+      visualDensity: VisualDensity.compact,
+      onPressed: onDetails,
     );
   }
 
@@ -156,9 +170,15 @@ class ChainCard extends StatelessWidget {
       _strip(),
       Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 4),
-        child: OutlinedButton(
-          onPressed: onRestart,
-          child: const Text('Restart chain'),
+        child: Row(
+          children: [
+            OutlinedButton(
+              onPressed: onRestart,
+              child: const Text('Restart chain'),
+            ),
+            const Spacer(),
+            _detailsButton(),
+          ],
         ),
       ),
     ];

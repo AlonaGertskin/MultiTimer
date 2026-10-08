@@ -15,6 +15,7 @@ class FakeNotificationService extends NotificationService {
     required int id,
     required String title,
     required DateTime when,
+    String body = 'Time is up',
   }) async {
     scheduled[id] = when;
   }

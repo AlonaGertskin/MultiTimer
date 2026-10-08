@@ -65,7 +65,10 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     for (final item in items) {
       if (!item.isRunning) continue;
       if (item is TimerModel) startTimer(item);
-      if (item is ChainModel) item.resume(item.endTime!, _refresh);
+      if (item is ChainModel) {
+        item.resume(item.endTime!, _refresh);
+        _scheduleChainAlerts(item);
+      }
     }
   }
 
@@ -109,8 +112,27 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     if (mounted) setState(() {});
   }
 
-  void _changeChain(VoidCallback change) {
+  void _scheduleChainAlerts(
+    ChainModel chain, {
+    Iterable<int> alsoCancel = const [],
+  }) {
+    for (final id in {...alsoCancel, ...chain.steps.map((step) => step.id)}) {
+      NotificationService.instance.cancel(id);
+    }
+    for (final alert in chain.upcomingAlerts()) {
+      NotificationService.instance.schedule(
+        id: alert.id,
+        title: alert.title,
+        body: alert.body,
+        when: alert.when,
+      );
+    }
+  }
+
+  void _changeChain(ChainModel chain, VoidCallback change) {
+    final stepIdsBefore = chain.steps.map((step) => step.id).toList();
     setState(change);
+    _scheduleChainAlerts(chain, alsoCancel: stepIdsBefore);
     _saveTimers();
   }
 
@@ -144,8 +166,12 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
       }
     });
     for (final entry in removed) {
-      if (entry.item is TimerModel) {
-        NotificationService.instance.cancel(entry.item.id);
+      final item = entry.item;
+      if (item is TimerModel) NotificationService.instance.cancel(item.id);
+      if (item is ChainModel) {
+        for (final step in item.steps) {
+          NotificationService.instance.cancel(step.id);
+        }
       }
     }
     _saveTimers();
@@ -181,6 +207,7 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
           when: end,
         );
       }
+      if (item is ChainModel) _scheduleChainAlerts(item);
     }
     _saveTimers();
   }
@@ -480,15 +507,18 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
                         ChainModel chain => ChainCard(
                           chain: chain,
                           onStart: () =>
-                              _changeChain(() => chain.start(_refresh)),
-                          onPause: () => _changeChain(chain.pause),
-                          onResetStep: () => _changeChain(chain.resetStep),
+                              _changeChain(chain, () => chain.start(_refresh)),
+                          onPause: () => _changeChain(chain, chain.pause),
+                          onResetStep: () =>
+                              _changeChain(chain, chain.resetStep),
                           onSkip: () =>
-                              _changeChain(() => chain.skip(_refresh)),
+                              _changeChain(chain, () => chain.skip(_refresh)),
                           onContinue: () => _changeChain(
+                            chain,
                             () => chain.continueToNext(_refresh),
                           ),
-                          onRestart: () => _changeChain(chain.restartChain),
+                          onRestart: () =>
+                              _changeChain(chain, chain.restartChain),
                         ),
                         _ => const SizedBox.shrink(),
                       },

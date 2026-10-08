@@ -274,6 +274,79 @@ void main() {
     });
   });
 
+  group('Upcoming alerts', () {
+    List<String> described(ChainModel chain) => [
+      for (final alert in chain.upcomingAlerts())
+        '${alert.title} | ${alert.body} | '
+            '${alert.when.difference(DateTime(2026, 1, 1, 12)).inSeconds}',
+    ];
+
+    test('a chain that is not running has none', () {
+      expect(newChain().upcomingAlerts(), isEmpty);
+    });
+
+    test('lists steps up to and including the first manual link', () {
+      final chain = newChain();
+      chain.start(() {});
+
+      expect(described(chain), [
+        'A finished | Dinner: B started | 60',
+        'B finished | Dinner: tap Continue to start C | 180',
+      ]);
+      chain.pause();
+    });
+
+    test('an all-automatic chain lists every step up to complete', () {
+      final chain = newChain(
+        steps: [
+          ChainStep(title: 'A', seconds: 60, startsNext: true),
+          ChainStep(title: 'B', seconds: 120, startsNext: true),
+          ChainStep(title: 'C', seconds: 30),
+        ],
+      );
+      chain.start(() {});
+
+      expect(described(chain), [
+        'A finished | Dinner: B started | 60',
+        'B finished | Dinner: C started | 180',
+        'Dinner complete | C finished | 210',
+      ]);
+      chain.pause();
+    });
+
+    test('steps already passed are left out', () {
+      final chain = newChain();
+      chain.start(() {});
+      pass(chain, 70);
+
+      expect(described(chain), [
+        'B finished | Dinner: tap Continue to start C | 180',
+      ]);
+      chain.pause();
+    });
+
+    test('a finished step waiting for Continue has none', () {
+      final chain = newChain();
+      chain.start(() {});
+      pass(chain, 200);
+
+      expect(chain.isWaitingForContinue, true);
+      expect(chain.upcomingAlerts(), isEmpty);
+      chain.pause();
+    });
+
+    test('each alert uses its step id', () {
+      final chain = newChain();
+      chain.start(() {});
+
+      expect(chain.upcomingAlerts().map((a) => a.id), [
+        chain.steps[0].id,
+        chain.steps[1].id,
+      ]);
+      chain.pause();
+    });
+  });
+
   group('Resume', () {
     test('carries on towards a given end time', () {
       final chain = newChain();

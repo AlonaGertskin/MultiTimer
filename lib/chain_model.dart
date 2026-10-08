@@ -38,6 +38,20 @@ class ChainStep {
   }
 }
 
+class ChainAlert {
+  final int id;
+  final String title;
+  final String body;
+  final DateTime when;
+
+  const ChainAlert({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.when,
+  });
+}
+
 class ChainModel implements ListItem {
   @override
   final int id;
@@ -91,6 +105,35 @@ class ChainModel implements ListItem {
       endTime = end;
     }
     remainingSeconds = (end!.difference(now).inMilliseconds / 1000).round();
+  }
+
+  List<ChainAlert> upcomingAlerts() {
+    final alerts = <ChainAlert>[];
+    var end = endTime;
+    if (!isRunning || end == null) return alerts;
+    final now = _now();
+
+    for (var i = currentIndex; i < steps.length; i++) {
+      final step = steps[i];
+      final isLast = i == steps.length - 1;
+      if (end!.isAfter(now)) {
+        alerts.add(
+          ChainAlert(
+            id: step.id,
+            title: isLast ? '$name complete' : '${step.title} finished',
+            body: isLast
+                ? '${step.title} finished'
+                : step.startsNext
+                ? '$name: ${steps[i + 1].title} started'
+                : '$name: tap Continue to start ${steps[i + 1].title}',
+            when: end,
+          ),
+        );
+      }
+      if (isLast || !step.startsNext) break;
+      end = end.add(Duration(seconds: steps[i + 1].seconds));
+    }
+    return alerts;
   }
 
   void start(Function onTick) {

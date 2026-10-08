@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bundle_editor_page.dart';
 import 'bundle_model.dart';
+import 'bundle_store.dart';
 import 'bundles_page.dart';
 import 'chain_card.dart';
 import 'chain_model.dart';
@@ -332,6 +333,48 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
     );
   }
 
+  List<BundleItem> _bundleItemsFrom(ListItem item) {
+    final List<BundleItem> found = switch (item) {
+      TimerModel timer => [
+        BundleItem(title: timer.title, seconds: timer.initialSeconds),
+      ],
+      ChainModel chain => [
+        for (final step in chain.steps)
+          BundleItem(
+            title: step.title,
+            seconds: step.seconds,
+            startsNext: step.startsNext,
+          ),
+      ],
+      _ => [],
+    };
+    if (found.isEmpty) return found;
+    final last = found.removeLast();
+    return [...found, BundleItem(title: last.title, seconds: last.seconds)];
+  }
+
+  Future<void> _makeBundle() async {
+    final draft = [
+      for (final item in items)
+        if (_selectedIds.contains(item.id)) ..._bundleItemsFrom(item),
+    ];
+    final bundle = await Navigator.push<Bundle>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BundleEditorPage(startWith: draft),
+      ),
+    );
+    if (bundle == null || !mounted) return;
+
+    final store = BundleStore();
+    await store.save([...await store.load(), bundle]);
+    if (!mounted) return;
+    _setEditMode(false);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Bundle ${bundle.name} saved')));
+  }
+
   void _clearDialogFields() {
     _titleController.clear();
     _timeController.clear();
@@ -529,6 +572,11 @@ class _MyMainPageState extends State<MyMainPage> with WidgetsBindingObserver {
             : '${_selectedIds.length} selected',
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.library_add_outlined),
+          tooltip: 'Make a bundle',
+          onPressed: _selectedIds.isEmpty ? null : _makeBundle,
+        ),
         IconButton(
           icon: const Icon(Icons.select_all),
           tooltip: 'Select all',

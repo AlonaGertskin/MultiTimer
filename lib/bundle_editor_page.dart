@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'bundle_model.dart';
+import 'bundle_store.dart';
 import 'chain_model.dart';
 import 'confirm_discard.dart';
 import 'time_fields.dart';
@@ -36,8 +37,9 @@ class ChainEdit {
 class BundleEditorPage extends StatefulWidget {
   final Bundle? editing;
   final ChainModel? chain;
+  final List<BundleItem>? startWith;
 
-  const BundleEditorPage({super.key, this.editing, this.chain});
+  const BundleEditorPage({super.key, this.editing, this.chain, this.startWith});
 
   @override
   State<BundleEditorPage> createState() => _BundleEditorPageState();
@@ -50,7 +52,10 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
   ];
   late final int _currentIndexAtOpen = widget.chain?.currentIndex ?? 0;
   late final Bundle? _original = widget.chain == null
-      ? widget.editing
+      ? widget.editing ??
+            (widget.startWith == null
+                ? null
+                : Bundle(name: '', items: widget.startWith!))
       : Bundle(
           name: widget.chain!.name,
           items: [
@@ -139,28 +144,52 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
     });
   }
 
+  bool _checkForm() {
+    String? problem;
+    if (_nameController.text.trim().isEmpty) {
+      problem = _isChain
+          ? 'Please enter a chain name.'
+          : 'Please enter a bundle name.';
+    } else if (_rows.isEmpty) {
+      problem = 'Add at least one timer.';
+    } else if (_rows.any((row) => row.title.text.trim().isEmpty)) {
+      problem = 'Every timer needs a name.';
+    } else if (_rows.any((row) => row.time.totalSeconds <= 0)) {
+      problem = 'Every timer needs a time above zero.';
+    }
+    setState(() => _error = problem);
+    return problem == null;
+  }
+
+  Bundle _bundleFromForm({int? id}) {
+    return Bundle(
+      id: id,
+      name: _nameController.text.trim(),
+      items: [
+        for (final row in _rows)
+          BundleItem(
+            title: row.title.text.trim(),
+            seconds: row.time.totalSeconds,
+            startsNext: row.startsNext,
+          ),
+      ],
+    );
+  }
+
+  Future<void> _saveAsBundle() async {
+    if (!_checkForm()) return;
+    final bundle = _bundleFromForm();
+    final store = BundleStore();
+    await store.save([...await store.load(), bundle]);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Bundle ${bundle.name} saved')));
+  }
+
   void _save() {
+    if (!_checkForm()) return;
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      setState(
-        () => _error = _isChain
-            ? 'Please enter a chain name.'
-            : 'Please enter a bundle name.',
-      );
-      return;
-    }
-    if (_rows.isEmpty) {
-      setState(() => _error = 'Add at least one timer.');
-      return;
-    }
-    if (_rows.any((row) => row.title.text.trim().isEmpty)) {
-      setState(() => _error = 'Every timer needs a name.');
-      return;
-    }
-    if (_rows.any((row) => row.time.totalSeconds <= 0)) {
-      setState(() => _error = 'Every timer needs a time above zero.');
-      return;
-    }
 
     if (_isChain) {
       Navigator.pop(
@@ -178,21 +207,7 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
       return;
     }
 
-    Navigator.pop(
-      context,
-      Bundle(
-        id: widget.editing?.id,
-        name: name,
-        items: [
-          for (final row in _rows)
-            BundleItem(
-              title: row.title.text.trim(),
-              seconds: row.time.totalSeconds,
-              startsNext: row.startsNext,
-            ),
-        ],
-      ),
-    );
+    Navigator.pop(context, _bundleFromForm(id: widget.editing?.id));
   }
 
   @override
@@ -276,6 +291,12 @@ class _BundleEditorPageState extends State<BundleEditorPage> {
               label: const Text('Add timer'),
               onPressed: _addRow,
             ),
+            if (_isChain)
+              TextButton.icon(
+                icon: const Icon(Icons.library_add_outlined),
+                label: const Text('Save as bundle'),
+                onPressed: _saveAsBundle,
+              ),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
